@@ -3,7 +3,7 @@ _start:
 
 
 exit:
-    li a7, 93   # syscall exit (93)
+    li a7, 93               # syscall exit (93)
     ecall
 
 
