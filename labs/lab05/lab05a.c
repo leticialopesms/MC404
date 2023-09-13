@@ -64,8 +64,70 @@ void _start()
 // ----------------------------------------------------
 
 void create_substring(char original[], char substring[], int start, int end) {
-    for 
+    int i;
+    for (i = start; i < end; i++) {
+        substring[i - start] = original[i];
+    }
+    substring[i] = '\0';
 }
+
+int string10_to_int(char str[], int i){
+    int valor = 0;
+    for (; str[i] != '\0'; i++) {
+        valor = (valor * 10) + (str[i] - 48);
+    }
+    return valor;
+}
+
+void revert_string(char original[], int tamanho) {
+    /* Exemplo: tamanho de "1001" = 4. */
+    int i;
+    char aux[tamanho];
+    for (i = 0; i < tamanho; i++) {
+        aux[i] = original[tamanho - i - 1];
+    }
+    aux[i] = '\0';
+    original = aux;
+}
+
+int completa_32_espacos(char binario[], int tamanho) {
+    while (tamanho < 32) {
+        binario[tamanho] = '0';
+        tamanho++;
+    }
+    binario[tamanho] = '\0';
+    return tamanho;
+}
+
+int completa_8_espacos(char hexadecimal[], int tamanho) {
+    while (tamanho < 8) {
+        hexadecimal[tamanho] = '0';
+        tamanho++;
+    }
+    hexadecimal[tamanho] = '\0';
+    return tamanho;
+}
+
+/* Converte um inteiro na base 10 para uma base
+   b, no formato de string, tal que 2 <= b <= 16. 
+   Retorna uma string com o número na base desejada, ordem correta. */
+int int_to_b(int valor, char str[], int b) {
+    char simbolos[17] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+    int i = 0;
+    int temp = valor;
+    int resto;
+    while (temp != 0) {
+        resto = temp % b;
+        str[i] = simbolos[resto];
+        temp = temp / b;
+        i++;
+    }
+    str[i] = '\0';
+    i = completa_32_espacos;
+    revert_string(str, i);
+    return i; // tamanho da str
+}
+
 // ----------------------------------------------------
 
 void pack(int input, int start_bit, int end_bit, int val[]) {
@@ -109,7 +171,6 @@ int main() {
     for (int i = 0; i < n-1; i = i + 6) {
         start = i;
         end = i + 4;
-
     }
 
     return 0;
