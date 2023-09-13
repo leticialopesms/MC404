@@ -10,7 +10,7 @@ exit:
 read:
     li a0, 0                # file descriptor = 0 (stdin)
     la a1, input_address    # buffer to write the data
-    li a2, 20               # size (reads only 20 bytes)
+    li a2, 4                # size (reads only 4 bytes)
     li a7, 63               # syscall read (63)
     ecall
     ret
@@ -19,7 +19,7 @@ read:
 write:
     li a0, 1                # file descriptor = 1 (stdout)
     la a1, input_address    # buffer
-    li a2, 20               # size
+    li a2, 4+10             # size
     li a7, 64               # syscall write (64)
     ecall
     ret
