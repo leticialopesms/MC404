@@ -7,35 +7,21 @@ exit:
     ecall
 
 
-# read:
-#     li a0, 0                # file descriptor = 0 (stdin)
-#     la a1, input_address    # buffer to write the data
-#     li a2, 4                # size (reads only 4 bytes)
-#     li a7, 63               # syscall read (63)
-#     ecall
-#     ret
+read:
+    li a0, 0        # file descriptor = 0 (stdin)
+    la a1, input    # buffer to write the data
+    li a2, 21       # size (reads only 4 bytes)
+    li a7, 63       # syscall read (63)
+    ecall
+    ret
 
 
-# write:
-#     li a0, 1                # file descriptor = 1 (stdout)
-#     la a1, input_address    # buffer
-#     li a2, 5                # size
-#     li a7, 64               # syscall write (64)
-#     ecall
-#     ret
-
-
-LOOP:
-    # Início do LOOP
-    li a1, 'a'              # Adiciona 1 byte ('a') no registrador a1
-    sb a1, 0(t1)            # Armazena 1 byte do registrador a1 na posição de memória t1 + 0
-    addi t1, t1, 1          # Adiciona 1 ao ponteiro t1
-    # Subtrai 1 do contador e volta ao LOOP se t2 != 0
-    addi t2, t2, -1
-    bne t2, zero, LOOP
-    # Instrução após o LOOP
-    li a1, '\n'     # Adiciona 1 byte ('\n') no registrador a1
-    sb a1, 0(t1)    # Armazena 1 byte do registrador a1 na posição de memória t1 + 0
+write:
+    li a0, 1         # file descriptor = 1 (stdout)
+    la a1, output    # buffer
+    li a2, 21        # size
+    li a7, 64        # syscall write (64)
+    ecall
     ret
 
 
@@ -193,7 +179,7 @@ LOOP_atualiza_output:
 
 
 main:
-    # jal read
+    jal read
     la s1, input
     la s2, numero
     la s3, output
@@ -212,7 +198,7 @@ main:
     
     # Inicializando o contador para o LOOP_INPUT
     li t4, 4
-    jal t0, LOOP_INPUT
+    jal LOOP_INPUT
 
     fim:
         jal write
@@ -221,19 +207,14 @@ main:
 
 .data
 
-# input_teste: .asciiz "0400 "
 .align 2
-input:  .asciiz "0400 5337 2240 9166\n"
+input:  .skip 0x20   # buffer
 .align 2
-numero: .asciiz "0000"
+numero: .asciz "0000"
 .align 2
-output:  .asciiz "0000 0000 0000 0000\n"
-.align 2
-endl: .byte '\n'
+output:  .asciz "0000 0000 0000 0000\n"
 .align 2
 dez: .byte 10
-# input_address: .skip 0x20   # buffer
-# output_address: .skip 0x20    # buffer
 
 # s1 = ponteiro que aponta para a string "input"
 # s2 = ponteiro que aponta para a string "numero"
