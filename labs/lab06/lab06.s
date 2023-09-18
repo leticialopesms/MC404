@@ -42,9 +42,9 @@ LOOP:
 main:
     jal read
     mv t1, a1       # Copia o valor do registrador a1 em t1
-                        # t1 é um ponteiro para a string endereçada em a1
+                    # t1 é um ponteiro para a string endereçada em a1
     addi t1, t1, 3  # Adiciona 3 ao ponteiro t1
-                        # Agora, t1 aponta para o último caracter da string ('\n')
+                    # Agora, t1 aponta para o último caracter da string ('\n')
 
     # li s1, '4'      # Adiciona 1 byte ('4') no registrador s1
     # sb s1, 0(t1)    # Armazena 1 byte do registrador s1 na posição de memória t1 + 0
@@ -64,6 +64,7 @@ main:
 
 .data
 
-string:  .asciz "Hello! It works!!!\n"
+# string:  .asciiz "Hello! It works!!!\n"
+string:  .asciiz "0400 5337 2240 9166\n"
 input_address: .skip 0x10  # buffer
 output_address: .skip 0x10  # buffer
