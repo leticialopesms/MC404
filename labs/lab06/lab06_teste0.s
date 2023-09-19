@@ -215,7 +215,7 @@ main:
     jal t0, LOOP_INPUT
 
     fim:
-        jal write
+        # jal write
         jal exit
 
 

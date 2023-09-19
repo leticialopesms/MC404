@@ -133,7 +133,7 @@ LOOP_raiz:  #OK
     # --- Instrução após o LOOP --- #
     ret
 
-LOOP_converte_inteiro:
+LOOP_converte_inteiro:  #OK
     remu a5, a3, a4     # Calcula o resto da divisão de k por 10
                         # Armazena o resto de a3/a4 (k/10) em a5
                         # Os números não têm sinal
@@ -155,7 +155,7 @@ LOOP_converte_inteiro:
                     # Agora t2 aponta para o algarismo menos significativo da string "numero"
     ret
 
-LOOP_atualiza_output:
+LOOP_atualiza_output:   #OK
     # --- Armazena um número na string "output"  --- #
     lb a5, 0(t2)    # Adiciona 1 byte (da posição t2 + 0 da memória) no registrador a5
                     # Esse byte é a posição t2 da string "numero"
