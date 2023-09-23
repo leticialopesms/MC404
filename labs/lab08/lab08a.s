@@ -46,12 +46,12 @@ close_file:
 
 
 main:
-    # --- Abrindo o arquivo input_file ("feep.pgm") --- #
+    # --- Abrindo o arquivo "input_file" --- #
     # Parâmetro de "open_file":
     la a0, input_file   # a0 = address for the file path
     jal open_file
 
-    mv s0, a0       # Armazena o descritor de arquivo de "file_input" em s0
+    mv s0, a0       # Armazena o descritor de arquivo de "input_file" em s0
     
     # --- Lendo a string "header" --- #
     # Parâmetros de "read_file":
@@ -60,7 +60,13 @@ main:
     li a2, 15       # a2 = size (reads only a2 bytes)
     jal read_file
 
-    mv s1, a0       # Armazena o endereço de "header" em s0
+    mv s1, a0       # Armazena o endereço de "header" em s1
+    mv t1, s1       # t1 = ponteiro para "header"
+
+    # --- Armazenando w, h e maxval --- #
+    # Linha 1 de "input_file" = "P2\n" ou "P5\n"
+    # Movendo o ponteito t1 para a linha 2
+    addi t1, t1, 3  # Aponta para o primeiro algarismo de w
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # PAREI AQUI
@@ -72,7 +78,7 @@ main:
     li a2, 16       # a2 = size
     jal write
 
-    # --- Fechando o arquivo input_file ("feep.pgm") --- #
+    # --- Fechando o arquivo "input_file" --- #
     # Parâmetros de "close_file":    
     mv a0, s0       # a0 = address for the file path
     jal close_file
@@ -85,6 +91,13 @@ input_file: .string "feep.pgm"
 
 header: .string "P2*www*hhh*mmm*\n"
 
-# width: .string "000\n"  # max width = 512
-# height: .string "000\n" # max height = 512
-# maxval: .string "000\n" # max maxval = 255
+width: .string "000\n"  # x
+                        # max width = 512
+height: .string "000\n" # y
+                        # max height = 512
+maxval: .string "000\n" # max maxval = 255
+
+# REGISTRADORES
+    # s0 = descritor de arquivo para "input_file"
+    # s1 = endereço de "header"
+    # t1 = ponteiro para "header"
