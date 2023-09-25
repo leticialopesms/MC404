@@ -33,7 +33,7 @@ LOOP_print:
     li t1, 10
     LOOP_linha:
         li a7, 2200         # syscall setPixel (2200)
-        ecall
+        # ecall
 
         # Atualiza y
         addi a1, a1, 1

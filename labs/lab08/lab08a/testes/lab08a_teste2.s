@@ -52,6 +52,11 @@ main:
     jal open_file
 
     mv s0, a0       # Armazena o descritor de arquivo de "input_file" em s0
+
+    la t2, 
+
+    lb a0, 0(t1)    # Adiciona 1 byte da posição de memória t1 + 0 em a0
+    sb a0, 0(t2)    # Armazena 1 byte de t1 na posição de memória t2 + 0
     
     # --- Lendo a string "header" --- #
     # Parâmetros de "read_file":
@@ -63,21 +68,6 @@ main:
     mv s1, a0       # Armazena o endereço de "header" em s1
     mv t1, s1       # t1 = ponteiro para "header"
 
-    # --- Armazenando w, h e maxval --- #
-    # Linha 1 de "input_file" = "P2\n" ou "P5\n"
-    # Movendo o ponteito t1 para a linha 2
-    addi t1, t1, 3  # Aponta para o primeiro algarismo de w
-
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# PAREI AQUI
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    # --- Escrevendo no terminal do simulador --- #
-    # Parâmetros de "write":
-    la a1, header   # a1 = buffer
-    li a2, 16       # a2 = size
-    jal write
-
     # --- Fechando o arquivo "input_file" --- #
     # Parâmetros de "close_file":    
     mv a0, s0       # a0 = address for the file path
@@ -87,17 +77,24 @@ main:
 
 
 .data
+
+.align 2
 input_file: .string "feep.pgm"
 
+.align 2
 header: .string "P2*www*hhh*mmm*\n"
 
-width: .string "000\n"  # x
+.align 2
+width: .string "000*"   # w = x
                         # max width = 512
-height: .string "000\n" # y
+.align 2
+height: .string "000*"  # h = y
                         # max height = 512
-maxval: .string "000\n" # max maxval = 255
+.align 2
+maxval: .string "000*"  # max maxval = 255
 
 # REGISTRADORES
     # s0 = descritor de arquivo para "input_file"
     # s1 = endereço de "header"
+    # s2 = w ou h
     # t1 = ponteiro para "header"
