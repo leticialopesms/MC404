@@ -90,12 +90,22 @@ to_string:
     # a1: pointer to the string
     li a2, 0    # a2 = number of digits in n
     li a7, 10   # a7 = number base
+
+    # --- Checking if (number == 0) --- #
+    li a3, '0'
+    sb a3, 0(a1)
+    addi a1, a1, 1  # updates the pointer a1
+    beqz a0, end_to_string
+    addi a1, a1, -1 # updates the pointer a1
+                    # basically ignores what was added
     
     # --- Checking if (number < 0) --- #
     bge a0, zero, LOOP_to_stack # if a0 >= zero then LOOP_to_stack
     li a3, '-'      # else
     sb a3, 0(a1)    # stores the negative sign in the string
     addi a1, a1, 1  # updates the pointer a1
+    li a3, -1
+    mul a0, a0, a3  # turn n into positive
     
     LOOP_to_stack:
         # --- Getting the digit --- #
@@ -123,10 +133,11 @@ to_string:
         # --- Checking LOOP condition --- #
         bnez a2, LOOP_to_string
     
-    li a3, '\n'
-    sb a3, 0(a1)
-    # Now a1 points to '\n'
-    ret
+    end_to_string:
+        li a3, '\n'
+        sb a3, 0(a1)
+        # Now a1 points to '\n'
+        ret
 
 
 search_in_linked_list:
@@ -229,6 +240,7 @@ main:
     # ----------------------------------------- #
     # --- Displaying the answer in terminal --- #
     # ----------------------------------------- #
+    li a0, 1        # a0: file descriptor
     la a1, output   # a1: buffer
     li a2, 6        # a2: size
     jal write
@@ -242,12 +254,32 @@ main:
 .data
 
 .align 2
-input: .string "******"
+# input: .string "******"
 # input: .string "134\n"
+input: .string "45\n"
 
 .align 2
 output: .string "******"
 
+# .align 2
+# head_node: 
+#     .word 10
+#     .word -4
+#     .word node_1
+# # .skip 10
+# node_1: 
+#     .word 56
+#     .word 78
+#     .word node_2
+# # .skip 5
+# node_3:
+#     .word -100
+#     .word -43
+#     .word 0
+# node_2:
+#     .word -654
+#     .word 590
+#     .word node_3
 
 # Registers:
 # s1: address of "input" string or "output" string
