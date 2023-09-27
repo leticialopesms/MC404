@@ -147,7 +147,6 @@ to_int:
         bge t2, s2, LOOP_to_int
 
     # --- Instrução após o LOOP --- #
-    # Agora t2 = s2
     ret
 
 
