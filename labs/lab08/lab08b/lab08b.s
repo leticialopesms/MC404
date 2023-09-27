@@ -118,9 +118,7 @@ get_val:
 
 get_byte:
     lbu a0, 0(t1)   # Adiciona 1 byte da posição de memória t1 + 0 em a0
-    sb a0, 0(t2)    # Armazena 1 byte de a0 na posição de memória t2 + 0
-    addi t1, t1, 1  # Atualizando ponteiro t1
-    addi t2, t2, 1  # Atualizando ponteiro t2
+    # addi t1, t1, 1  # Atualizando ponteiro t1
     ret
 
 
@@ -150,6 +148,96 @@ to_int:
 
     # --- Instrução após o LOOP --- #
     # Agora t2 = s2
+    ret
+
+
+apply_filter:
+    # t1: ponteiro para a string "file" (aponta para o pixel original)
+    # t3: coluna atual
+    # t4: linha atual
+    # t5: valor do pixel original
+    # s3: width
+    # s4: height
+
+    li a2, 0x000000FF   # Muda a cor para preto
+    # --- Se for a primeira linha --- #
+    beqz t4, print_canvas
+    # --- Se for a última linha --- #
+    mv a7, s4
+    addi a7, a7, -1
+    beq t4, a7, print_canvas
+    # --- Se for o primeiro byte da linha --- #
+    beqz t3, print_canvas
+    # --- Se for o último byte da linha --- #
+    mv a7, s3
+    addi a7, a7, -1
+    beq t3, a7, print_canvas
+
+    # --- Senão, aplicar filtro --- #
+    li a0, 0   # a0 = valor do novo pixel = soma da matriz
+    # t2 = posição do pixel atual
+    # a2 = pixel atual
+
+    mv t2, t1
+    li a7, -1
+
+    # t2 = t1 - w - 1
+    sub t2, t2, s3
+    addi t2, t2, -1
+    lbu a2, 0(t2)
+    mul a2, a2, a7  # Multiplica o pixel pelo valor da matriz filtro correspondente à sua posição
+    add a0, a0, a2  # Adiciona o valor na soma total
+
+    # t2 = t1 - w
+    addi t2, t2, 1
+    lbu a2, 0(t2)
+    mul a2, a2, a7  # Multiplica o pixel pelo valor da matriz filtro correspondente à sua posição
+    add a0, a0, a2  # Adiciona o valor na soma total
+
+    # t2 = t1 - w + 1
+    addi t2, t2, 1
+    lbu a2, 0(t2)
+    mul a2, a2, a7  # Multiplica o pixel pelo valor da matriz filtro correspondente à sua posição
+    add a0, a0, a2  # Adiciona o valor na soma total
+
+    # t2 = t1 - 1
+    add t2, t2, s3
+    addi t2, t2, -2
+    lbu a2, 0(t2)
+    mul a2, a2, a7  # Multiplica o pixel pelo valor da matriz filtro correspondente à sua posição
+    add a0, a0, a2  # Adiciona o valor na soma total
+
+    # t2 = t1 + 1
+    addi t2, t2, 2
+    lbu a2, 0(t2)
+    mul a2, a2, a7  # Multiplica o pixel pelo valor da matriz filtro correspondente à sua posição
+    add a0, a0, a2  # Adiciona o valor na soma total
+
+    # t2 = t1 + w - 1
+    add t2, t2, s3
+    addi t2, t2, -2
+    lbu a2, 0(t2)
+    mul a2, a2, a7  # Multiplica o pixel pelo valor da matriz filtro correspondente à sua posição
+    add a0, a0, a2  # Adiciona o valor na soma total
+
+    # t2 = t1 + w
+    addi t2, t2, 1
+    lbu a2, 0(t2)
+    mul a2, a2, a7  # Multiplica o pixel pelo valor da matriz filtro correspondente à sua posição
+    add a0, a0, a2  # Adiciona o valor na soma total
+
+    # t2 = t1 + w + 1
+    addi t2, t2, 1
+    lbu a2, 0(t2)
+    mul a2, a2, a7  # Multiplica o pixel pelo valor da matriz filtro correspondente à sua posição
+    add a0, a0, a2  # Adiciona o valor na soma total
+
+    # t2 = t1
+    li a7, 8
+    mul a2, t5, a7
+    add a0, a0, a2
+
+    # Retorna o valor do novo pixel em a0
     ret
 
 
@@ -192,10 +280,10 @@ main:
     mv s3, a0       # s3 = width
 
     # --- Escrevendo no terminal do simulador --- #
-    # Parâmetros de "write":
-    la a1, width    # a1: buffer
-    addi a2, a2, 1  # a2: size
-    jal write
+    # # Parâmetros de "write":
+    # la a1, width    # a1: buffer
+    # addi a2, a2, 1  # a2: size
+    # jal write
 
     # --- h --- #
     la s2, height   # s2 = posição de memória de "height"
@@ -207,9 +295,9 @@ main:
 
     # --- Escrevendo no terminal do simulador --- #
     # Parâmetros de "write":
-    la a1, height   # a1: buffer
-    addi a2, a2, 1  # a2: size
-    jal write
+    # la a1, height   # a1: buffer
+    # addi a2, a2, 1  # a2: size
+    # jal write
 
     # --- maxval --- #
     la s2, maxval   # s2 = posição de memória de "maxval"
@@ -221,9 +309,9 @@ main:
 
     # --- Escrevendo no terminal do simulador --- #
     # Parâmetros de "write":
-    la a1, maxval   # a1: buffer
-    addi a2, a2, 1  # a2: size
-    jal write
+    # la a1, maxval   # a1: buffer
+    # addi a2, a2, 1  # a2: size
+    # jal write
 
     addi t1, t1, 1
     # Agora:
@@ -249,14 +337,12 @@ main:
     # ------------------------------------- #
     li t4, 0        # t4 = y_inicial
     LOOP_print:
+        # t4 = linha atual
         li t3, 0    # t3 = x_inicial
         LOOP_linha:
-            la s2, pixel    # s2 = posição de memória de "pixel"
-            mv t2, s2       # t2 = ponteiro para "pixel"
+            # t3 = coluna atual
             jal get_byte
             mv t5, a0       # t5 = valor do pixel
-            li a0, '\n'
-            sb a0, 0(t2)    # Armazena 1 byte de a0 na posição de memória t2 + 0
     
             # --- Escrevendo no terminal do simulador para debugar --- #
             # Parâmetros de "write":
@@ -264,18 +350,37 @@ main:
             # sub a2, t2, s2
             # addi a2, a2, 1      # a2: size
             # jal write
+
+            # --- Aplicando o filtro --- #
+            jal apply_filter
+            mv t5, a0
     
             # --- Ajustando a cor do pixel --- #
-            mv a2, t5       # Inicializando a cor a ser impressa no Canvas
-            slli a2, a2, 8  # Multiplicando o valor em a2 por 2^8 (= 16^2)
-                            # Fazendo o shift de duas casas hexadecimais
-            add a2, a2, t5
-            slli a2, a2, 8  # Multiplicando o valor em a2 por 2^8 (= 16^2)
-                            # Fazendo o shift de duas casas hexadecimais
-            add a2, a2, t5
-            slli a2, a2, 8  # Multiplicando o valor em a2 por 2^8 (= 16^2)
-                            # Fazendo o shift de duas casas hexadecimais
-            addi a2, a2, 0xFF   # Maximizando a opacidade
+            li a7, 0xFF
+            # Verificando se está dentro do intervalo
+            bgt t5, a7, change_to_max       # if t5 > a7 then change_to_max
+            blt t5, zero, change_to_min     # if t5 < zero then change_to_min
+            j shift_pixel
+            
+            change_to_max:
+                mv t5, a7
+                j shift_pixel
+            
+            change_to_min:
+                mv t5, zero
+                j shift_pixel
+            
+            shift_pixel:
+                mv a2, t5       # Inicializando a cor a ser impressa no Canvas
+                slli a2, a2, 8  # Multiplicando o valor em a2 por 2^8 (= 16^2)
+                                # Fazendo o shift de duas casas hexadecimais
+                add a2, a2, t5
+                slli a2, a2, 8  # Multiplicando o valor em a2 por 2^8 (= 16^2)
+                                # Fazendo o shift de duas casas hexadecimais
+                add a2, a2, t5
+                slli a2, a2, 8  # Multiplicando o valor em a2 por 2^8 (= 16^2)
+                                # Fazendo o shift de duas casas hexadecimais
+                addi a2, a2, 0xFF   # Maximizando a opacidade
 
             print_canvas:
                 # --- Imprimindo pixel no Canvas --- #
@@ -286,12 +391,13 @@ main:
                 jal setPixel
 
             # --- Atualizando LOOP --- #
-            addi t3, t3, 1 # Atualiza x
+            addi t3, t3, 1  # Atualiza x
+            addi t1, t1, 1  # Atualizando ponteiro t1
             # --- Verificando condição de retorno --- #
             bne t3, s3, LOOP_linha
 
         # --- Atualizando LOOP --- #
-        addi t4, t4, 1 # Atualiza y
+        addi t4, t4, 1  # Atualiza y
         # --- Verificando condição de retorno --- #
         bne t4, s4, LOOP_print
 
@@ -327,7 +433,7 @@ main:
 input_file: .string "image.pgm"
 
 .align 2
-file: .skip 0x40000
+file: .skip 0x4000F     # max size = header + matrix = 15 + 512 x 512
 
 .align 2
 width: .string "000*"   # w = x 
@@ -337,9 +443,6 @@ height: .string "000*"  # h = y
                         # max height = 512
 .align 2
 maxval: .string "000*"  # max maxval = 255
-
-.align 2
-pixel: .string "000*"   # max pixel = 255
 
 # REGISTRADORES
     # s1 = endereço de "file"

@@ -38,7 +38,7 @@ setScaling:
     ret
 
 
-open:
+open_file:
     # a0: address for the file path
     li a1, 0        # a1 = flags (0: rdonly, 1: wronly, 2: rdwr)
     li a2, 0        # a2 = mode
@@ -47,7 +47,7 @@ open:
     ret
 
 
-read:
+read_file:
     # a0: file descriptor
     # a1: buffer to write the data
     # a2: size (reads only 10 bytes)
@@ -65,7 +65,7 @@ write:
     ret
 
 
-close:
+close_file:
     # a0: address for the file path
     li a7, 57       # a7: syscall close (57)
     ecall
@@ -87,7 +87,7 @@ get_val:
 
     value:
         lbu a0, 0(t1)   # Adiciona 1 byte da posição de memória t1 + 0 em a0
-        sb a0, 0(t2)    # Armazena 1 byte de a0 na posição de memória t2 + 0
+        sb a0, 0(t2)    # Armazena 1 byte de t1 na posição de memória t2 + 0
         # Atualizando ponteiros
         addi t1, t1, 1
         addi t2, t2, 1
@@ -111,16 +111,21 @@ get_val:
     # Instrução após o LOOP
     end_get_val:
         li a0, '\n'
-        sb a0, 0(t2)    # Armazena 1 byte de a0 na posição de memória t2 + 0
+        sb a0, 0(t2)    # Armazena 1 byte de t1 na posição de memória t2 + 0
         # addi t1, t1, 1
         ret
 
 
+# get_byte:
+#     lbu a0, 0(t1)   # Adiciona 1 byte da posição de memória t1 + 0 em a0
+#     sb a0, 0(t2)    # Armazena 1 byte de t1 na posição de memória t2 + 0
+#     addi t1, t1, 1  # Atualizando ponteiro t1
+#     addi t2, t2, 1  # Atualizando ponteiro t2
+#     ret
+
+
 get_byte:
-    lbu a0, 0(t1)   # Adiciona 1 byte da posição de memória t1 + 0 em a0
-    sb a0, 0(t2)    # Armazena 1 byte de a0 na posição de memória t2 + 0
-    addi t1, t1, 1  # Atualizando ponteiro t1
-    addi t2, t2, 1  # Atualizando ponteiro t2
+    lbu a0, 0(t1)    # Adiciona 1 byte da posição de memória t1 + 0 em a0
     ret
 
 
@@ -153,15 +158,20 @@ to_int:
     ret
 
 
+apply_filter:
+    # Aplica o filtro em um pixel
+    ret
+
+
 main:
     # -------------------------------------- #
     # --- Abrindo o arquivo "input_file" --- #
     # -------------------------------------- #
     # Parâmetro de "open_file":
     la a0, input_file   # a0: address for the file path
-    jal open
+    jal open_file
 
-    mv s10, a0      # Armazena o descritor de arquivo de "input_file" em s10
+    mv s0, a0       # Armazena o descritor de arquivo de "input_file" em s0
     
     # ------------------------------- #
     # --- Lendo a string "file" --- #
@@ -170,7 +180,7 @@ main:
                     # a0: file descriptor
     la a1, file     # a1: buffer to write the data
     li a2, 0x40000  # a2: size (reads only 0x40000 bytes)
-    jal read
+    jal read_file
 
     la s1, file     # Armazena o endereço de "file" em s1
     mv t1, s1       # t1 = ponteiro para "file"
@@ -240,50 +250,50 @@ main:
                         # Para o lab08a: a0 = 10 e a1 = 10
     
     # Parâmetros de "setScaling":
-    # li a0, 2         # a0: horizontal scaling
-    # li a1, 2         # a1: vertical scaling
-    # jal setScaling
+    li a0, 1         # a0: horizontal scaling
+    li a1, 1         # a1: vertical scaling
+    jal setScaling
 
     # ------------------------------------- #
     # --- Imprimindo a figura no canvas --- #
     # ------------------------------------- #
+    la s2, matrix   # s2 = posição de memória de "matrix"
+    mv t2, s2       # t2 = ponteiro para "matrix"
+
     li t4, 0        # t4 = y_inicial
     LOOP_print:
         li t3, 0    # t3 = x_inicial
         LOOP_linha:
-            la s2, pixel    # s2 = posição de memória de "pixel"
-            mv t2, s2       # t2 = ponteiro para "pixel"
+            # --- Se for a primeira linha --- #
+            # ou
+            # --- Se for o primeiro byte da linha --- #
+            set_all_black:
+                # Pixel = 0
+                # ...
+                # Atualizando LOOP
+                addi t3, t3, 1 # Atualiza x
+                # Verificando condição de retorno
+                beq t3, zero, LOOP_linha
+                bne t3, s3, set_black
+                addi t4, t4, 1 # Atualiza y
+                j LOOP_print
+                
+            # --- Armazenando a cor do pixel --- #
             jal get_byte
-            mv t5, a0       # t5 = valor do pixel
-            li a0, '\n'
-            sb a0, 0(t2)    # Armazena 1 byte de a0 na posição de memória t2 + 0
-    
-            # --- Escrevendo no terminal do simulador para debugar --- #
-            # Parâmetros de "write":
-            # la a1, pixel        # a1: buffer
-            # sub a2, t2, s2
-            # addi a2, a2, 1      # a2: size
-            # jal write
+            mv t5, a0       # t5 = cor do pixel
     
             # --- Ajustando a cor do pixel --- #
-            mv a2, t5       # Inicializando a cor a ser impressa no Canvas
-            slli a2, a2, 8  # Multiplicando o valor em a2 por 2^8 (= 16^2)
-                            # Fazendo o shift de duas casas hexadecimais
-            add a2, a2, t5
-            slli a2, a2, 8  # Multiplicando o valor em a2 por 2^8 (= 16^2)
-                            # Fazendo o shift de duas casas hexadecimais
-            add a2, a2, t5
-            slli a2, a2, 8  # Multiplicando o valor em a2 por 2^8 (= 16^2)
-                            # Fazendo o shift de duas casas hexadecimais
-            addi a2, a2, 0xFF   # Maximizando a opacidade
-
-            print_canvas:
-                # --- Imprimindo pixel no Canvas --- #
-                # Parâmetros de "setPixel":
-                mv a0, t3           # a0: x
-                mv a1, t4           # a1: y
-                                    # a2: pixel's color
-                jal setPixel
+            li a7, 255
+            mul t5, t5, a7      # t5 = 255*pixel
+            div t5, t5, s5      # t5 = 255*pixel/maxval
+            sub t5, a7, t5
+    
+            # --- Imprimindo pixel no Canvas --- #
+            # Parâmetros de "setPixel":
+            mv a0, t3           # a0: x
+            mv a1, t4           # a1: y
+            mv a2, t5           # a2: pixel's color
+            jal setPixel
 
             # --- Atualizando LOOP --- #
             addi t3, t3, 1 # Atualiza x
@@ -296,19 +306,19 @@ main:
         bne t4, s4, LOOP_print
 
     li a0, '\n'
-    sb a0, 0(t1)    # Armazena 1 byte de a0 na posição de memória t1 + 0
+    sb a0, 0(t1)    # Armazena 1 byte de t1 na posição de memória t2 + 0
     # --- Escrevendo no terminal do simulador --- #
     # Parâmetros de "write":
-    # la a1, file     # a1: buffer
-    # li a2, 0x40000  # a2: size
-    # jal write
+    la a1, file     # a1: buffer
+    li a2, 0x40000  # a2: size
+    jal write
 
     # --------------------------------------- #
     # --- Fechando o arquivo "input_file" --- #
     # --------------------------------------- #
     # Parâmetros de "close_file":    
-    mv a0, s10      # a0: address for the file path
-    jal close
+    mv a0, s0       # a0: address for the file path
+    jal close_file
 
     # ------------------------------------ #
     # --- Chamando a saída do programa --- #
@@ -323,11 +333,13 @@ main:
 # input_file: .string "bird.pgm"
 # input_file: .string "test.pgm"
 # input_file: .string "image6.pgm"
-# input_file: .string "pbmlib.pgm"
 input_file: .string "image.pgm"
 
 .align 2
-file: .skip 0x40000
+file: .skip 0x4000F     # max size = header + matrix = 15 + 512*512
+
+# .align 2
+# matrix: .skip 0x40000   # max dim = 512 x 512
 
 .align 2
 width: .string "000*"   # w = x 
@@ -342,15 +354,15 @@ maxval: .string "000*"  # max maxval = 255
 pixel: .string "000*"   # max pixel = 255
 
 # REGISTRADORES
+    # s0 = descritor de arquivo para "input_file"
     # s1 = endereço de "file"
     # s2 = posições de w ou h ou maxval
     # s3 = width (inteiro)
     # s4 = height (inteiro)
     # s5 = maxval (inteiro)
-    # s10 = descritor de arquivo para "input_file"
-    # t1 = ponteiro para "file"
-    # t2 = ponteiro para width ou height ou maxval ou pixel
     # t3 = coordenada x do pixel
     # t4 = coordenada y do pixel
-    # t5 = valor do pixel
+    # t5 = cor do pixel
+    # t1 = ponteiro para "file"
+    # t2 = ponteiro para width ou height ou maxval
     # a7 = syscalls ou auxiliar de div ou mul
