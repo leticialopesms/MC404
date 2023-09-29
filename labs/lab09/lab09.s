@@ -48,13 +48,13 @@ close:
 find_endl:
     # t1: pointer to a string
     addi t1, t1, 1  # Update t1 pointer
-    lb a0, 0(t1)            # a0 = byte from the memory position t1 + 0
+    lb a0, 0(t1)            # a0 = byte from the memory address t1 + 0
     li a1, '\n'             # a1 = 10
     bne a0, a1, find_endl   # if a0 != a1 then find_endl
     ret
 
 
-# Convert a number stored in string format to a integer
+# Converts a number stored in string format to a integer
 to_int:
     # a1: pointer to the least significant digit (LSD) of "input" string
     # a2: pointer to the most significant digit (MSD) of "input" string
@@ -62,29 +62,28 @@ to_int:
     li a7, 1        # a7 = multiplication factor
     LOOP_to_int:
         # --- Convert char to int --- #
-        lb a3, 0(a1)        # Adiciona 1 byte (da posição a1 + 0 da memória) no registrador a3
-        addi a3, a3, -48    # Converte o valor em a3 de char para int
-        mul a3, a3, a7      # Aplica o fator de multiplicação em a3
-        add a0, a0, a3      # Soma a0 (valor inicial) com a2 (valor atual multiplicado pelo seu fator)
-                            # Armazena em a0
+        lb a3, 0(a1)        # a3 = byte (from memory address a1 + 0)
+        addi a3, a3, -48    # converts value in a3 to int (0 to 9), according to ASCII table
+        mul a3, a3, a7      # applies multiplication factor on a3
+        add a0, a0, a3      # sums the current value on a3 with a0
 
         # --- Updating multiplication factor --- #
         li a3, 10
-        mul a7, a7, a3         # Atualiza o fator de multiplicação (multiplica a7 por 10)
+        mul a7, a7, a3      # updates the multiplication factor (a7 * 10)
 
         # --- Updatig pointer --- #
-        addi a1, a1, -1         # Remove 1 do iterador a1
-                                # Move o ponteiro a1 de "numero" para a esquerda
+        addi a1, a1, -1     # shifts a1 pointer to the left
        
         # --- Checking LOOP condition --- #
-        bge a1, a2, LOOP_to_int
+        bge a1, a2, LOOP_to_int # if a1 >= a2 then LOOP_to_int
+                                # else ret a0
 
     # --- Instruction after LOOP --- #
     # Now a1 = a2 - 1
     ret
 
 
-# Convert a number stored in integer format to a string
+# Converts a number stored in integer format to a string
 to_string:
     # a0: n = integer number
     # a1: pointer to the string
@@ -183,7 +182,7 @@ main:
     lb a0, 0(t1)            # a0 = first digit of "input" string
     li a1, '-'              # a1 = 45
     beq a0, a1, negative    # if a0 == a1 then negative
-    j positive              # else then positive
+    j positive              # else positive
 
     negative:
         li s11, -1      # s11 = -1 (negative sign)
