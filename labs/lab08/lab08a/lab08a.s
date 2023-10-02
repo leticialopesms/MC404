@@ -324,6 +324,7 @@ main:
 # input_file: .string "test.pgm"
 # input_file: .string "image6.pgm"
 # input_file: .string "pbmlib.pgm"
+# input_file: .string "image_teste.pgm"
 input_file: .string "image.pgm"
 
 .align 2
