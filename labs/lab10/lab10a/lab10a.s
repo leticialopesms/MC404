@@ -388,8 +388,8 @@ linked_list_search:
         # VAL1
         lw a2, 0(a0)    # a2 = VAL1
         addi a0, a0, 4  # Update pointer
-        # VAL1
-        lw a3, 0(a0)    # a2 = VAL1
+        # VAL2
+        lw a3, 0(a0)    # a3 = VAL2
         addi a0, a0, 4  # Update pointer
 
         # --- Getting VAL1 + VAL2 --- #
