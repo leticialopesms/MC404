@@ -13,6 +13,7 @@
 .globl atoi
 .globl itoa
 .globl linked_list_search
+.globl recursive_tree_search
 
 
 exit:

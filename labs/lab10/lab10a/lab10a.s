@@ -10,14 +10,6 @@
 .globl atoi
 .globl itoa
 .globl linked_list_search
-# .globl LOOP_search
-# .globl LOOP_stack_up_char
-# .globl LOOP_stack_up_int
-# .globl LOOP_to_int
-# .globl LOOP_to_string
-# .globl ignore_whitespace
-# .globl positive
-# .globl negative
 
 
 exit:
@@ -64,14 +56,14 @@ find_eof:
     # a0: pointer to a string
     lb a1, 0(a0)            # a1 = byte from the memory address a0 + 0
     addi a0, a0, 1          # Updates a0 pointer
-    li a2, '\n'             # a2 = 10
+    li a2, 10               # a2 = 10
     beq a1, a2, found_eof   # if a1 == a2 then found_eof
-    li a2, 31               # a2 = 10
-    blt a1, a2, found_eof   # if a1 < a2 then found_eof
+    # li a2, 0                # a2 = 0
+    # blt a1, a2, found_eof   # if a1 < a2 then found_eof
     j find_eof
     
     found_eof:
-        addi a0, a0, -1         # Update a0 pointer
+        addi a0, a0, -1     # Update a0 pointer
         # returns the position of '\n'
         ret
 
