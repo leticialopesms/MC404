@@ -3,7 +3,7 @@
 .globl exit
 .globl read
 .globl write
-.globl find_eof
+# .globl find_eof
 .globl find_null
 .globl puts
 .globl gets
@@ -51,19 +51,19 @@ write:
     ret
 
 
-find_eof:
-    # Parameters: 
-    # a0: pointer to a string
-    lb a1, 0(a0)            # a1 = byte from the memory address a0 + 0
-    addi a0, a0, 1          # Updates a0 pointer
-    li a2, 10               # a2 = 10
-    beq a1, a2, found_eof   # if a1 == a2 then found_eof
-    j find_eof
+# find_eof:
+#     # Parameters: 
+#     # a0: pointer to a string
+#     lb a1, 0(a0)            # a1 = byte from the memory address a0 + 0
+#     addi a0, a0, 1          # Updates a0 pointer
+#     li a2, 10               # a2 = 10
+#     beq a1, a2, found_eof   # if a1 == a2 then found_eof
+#     j find_eof
     
-    found_eof:
-        addi a0, a0, -1     # Update a0 pointer
-        # returns the position of '\n'
-        ret
+#     found_eof:
+#         addi a0, a0, -1     # Update a0 pointer
+#         # returns the position of '\n'
+#         ret
 
 
 find_null:
@@ -86,29 +86,49 @@ find_null:
 gets:
     # Parameters:
     # a0 (str): Pointer to a block of memory (array of char) where the string read is copied as a C string
-    mv t1, a0   # t1 = pointer to str
     
     # --- Storing ra value on stack --- #
     addi sp, sp, -4
     sw ra, 0(sp)
-    
-    # --- Calling the read funtion --- #
-    li a0, 0    # a0: file descriptor (stdin = 0)
-    mv a1, t1   # a1: buffer
-    li a2, 100  # a2: size (bytes)
-    jal read
 
-    # --- Reaching the '\n' character --- #
-    mv a0, t1
-    jal find_eof
-    # Now, a0 points to '\n'
+    # --- Storing the begining of str on stack --- #
+    addi sp, sp, -4
+    sw a0, 0(sp)
+
+    # --- Storing the current position of str on stack --- #
+    addi sp, sp, -4
+    sw a0, 0(sp)
+
+    # --- Reading from the buffer --- #
+    find_eof:
+        # --- Restoring current position of str on stack --- #
+        lw a1, 0(sp)
+
+        # --- Calling the read funtion --- #
+        li a0, 0    # a0: file descriptor (stdin = 0)
+                    # a1: buffer
+        li a2, 1    # a2: size (bytes)
+        jal read
+    
+        lb a2, 0(a1)        # Loads the byte from 'a0 + 0' memory position
+        li a3, '\n'         # a3 = 10
+
+        addi a1, a1, 1     # else update a1 pointer
+        # --- Storing current position of str on stack --- #
+        sw a1, 0(sp)
+
+        bne a2, a3, find_eof    # if a0 != t1 then find_eof
+        addi sp, sp, 4
+        mv a0, a1
+        # Now, a0 points to '\n'
 
     # --- Adding the null character '\0' --- #
     li a1, 0
     sb a1, 0(a0)
 
-    # --- Restoring the begining of str --- #
-    mv a0, t1
+    # --- Updating the begining of str --- #
+    lw a0, 0(sp)
+    addi sp, sp, 4
 
     # --- Recovering ra value on stack --- #
     lw ra, 0(sp)
@@ -347,7 +367,7 @@ itoa:
         # --- Converting to char --- #
         li a4, 10
         blt a3, a4, to_char # if a3 < a4 then to_char
-        addi a3, a3, 39     # else considers letters 'a' to 'f'
+        addi a3, a3, 7      # else considers letters 'a' to 'f'
         to_char:
             addi a3, a3, 48 # converts value in a3 to char, according to ASCII table
     

@@ -78,36 +78,80 @@ find_null:
     ret
 
 
+# # Get string from stdin
+# # Reads characters from the stdin and stores them as C string into str (a0) until a newline character or the end-of-file is reached.
+# # The newline character (\n), if found, is not copied into str.
+# # A terminating null character (\0) is automatically appended after the characters copied to str.
+# gets:
+#     # Parameters:
+#     # a0 (str): Pointer to a block of memory (array of char) where the string read is copied as a C string
+#     mv t1, a0   # t1 = pointer to str
+    
+#     # --- Storing ra value on stack --- #
+#     addi sp, sp, -4
+#     sw ra, 0(sp)
+    
+#     # --- Calling the read funtion --- #
+#     li a0, 0    # a0: file descriptor (stdin = 0)
+#     mv a1, t1   # a1: buffer
+#     li a2, 100  # a2: size (bytes)
+#     # jal read
+
+#     # --- Reaching the '\n' character --- #
+#     mv a0, t1
+#     jal find_endl
+#     # Now, a0 points to '\n'
+
+#     # --- Adding the null character '\0' --- #
+#     li a1, 0
+#     sb a1, 0(a0)
+
+#     # --- Restoring the begining of str --- #
+#     mv a0, t1
+
+#     # --- Recovering ra value on stack --- #
+#     lw ra, 0(sp)
+#     addi sp, sp, 4
+#     ret
+
+
 # Get string from stdin
 # Reads characters from the stdin and stores them as C string into str (a0) until a newline character or the end-of-file is reached.
 # The newline character (\n), if found, is not copied into str.
 # A terminating null character (\0) is automatically appended after the characters copied to str.
+# char *gets ( char *str )
 gets:
     # Parameters:
     # a0 (str): Pointer to a block of memory (array of char) where the string read is copied as a C string
     mv t1, a0   # t1 = pointer to str
+    mv t2, t1   # t2 = pointer to begining of str
     
     # --- Storing ra value on stack --- #
     addi sp, sp, -4
     sw ra, 0(sp)
-    
-    # --- Calling the read funtion --- #
-    li a0, 0    # a0: file descriptor (stdin = 0)
-    mv a1, t1   # a1: buffer
-    li a2, 100  # a2: size (bytes)
-    # jal read
 
-    # --- Reaching the '\n' character --- #
-    mv a0, t1
-    jal find_endl
-    # Now, a0 points to '\n'
+    # --- Reading from the buffer --- #
+    find_eof:
+        # --- Calling the read funtion --- #
+        li a0, 0    # a0: file descriptor (stdin = 0)
+        mv a1, t1   # a1: buffer
+        li a2, 1    # a2: size (bytes)
+        # jal read
+        lb a1, 0(t1)        # Loads the byte from 'a0 + 0' memory position
+        li a2, '\n'         # a1 = 10
+        addi t1, t1, 1      # Update a0 pointer
+        bne a1, a2, find_eof    # if a0 != t1 then find_eof
+
+        addi t1, t1, -1     # else update a0 pointer
+        mv a0, t1
+        # Now, a0 points to '\n'
 
     # --- Adding the null character '\0' --- #
     li a1, 0
     sb a1, 0(a0)
 
-    # --- Restoring the begining of str --- #
-    mv a0, t1
+    # --- Updating the begining of str --- #
+    mv a0, t2
 
     # --- Recovering ra value on stack --- #
     lw ra, 0(sp)
@@ -413,4 +457,4 @@ main:
     j exit
 
 .data
-input: .string "Answer\n"
+input: .string "Answer\n000"
