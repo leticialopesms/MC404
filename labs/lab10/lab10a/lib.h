@@ -3,9 +3,9 @@ typedef struct Node {
     struct Node *next;
 } Node;
 
-int linked_list_search(Node *head_node, int val);
+int linked_list_search (Node *head_node, int val);
 void puts ( const char *str );
 char *gets ( char *str );
 int atoi (const char *str);
 char *itoa ( int value, char *str, int base );
-void exit(int code);
+void exit (int code);

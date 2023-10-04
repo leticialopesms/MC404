@@ -58,8 +58,6 @@ find_eof:
     addi a0, a0, 1          # Updates a0 pointer
     li a2, 10               # a2 = 10
     beq a1, a2, found_eof   # if a1 == a2 then found_eof
-    # li a2, 0                # a2 = 0
-    # blt a1, a2, found_eof   # if a1 < a2 then found_eof
     j find_eof
     
     found_eof:
@@ -72,8 +70,8 @@ find_null:
     # Parameters:
     # a0: pointer to a string
     lb a1, 0(a0)            # a1 = byte from the memory address a0 + 0
-    li a2, 0                # a2 = 0
     addi a0, a0, 1          # Updates a0 pointer
+    li a2, 0                # a2 = 0
     bne a1, a2, find_null   # if a1 != a2 then find_null
     addi a0, a0, -1         # Update a0 pointer
     # returns the position of '\0'
@@ -84,6 +82,7 @@ find_null:
 # Reads characters from the stdin and stores them as C string into str (a0) until a newline character or the end-of-file is reached.
 # The newline character (\n), if found, is not copied into str.
 # A terminating null character (\0) is automatically appended after the characters copied to str.
+# char *gets ( char *str )
 gets:
     # Parameters:
     # a0 (str): Pointer to a block of memory (array of char) where the string read is copied as a C string
@@ -121,6 +120,7 @@ gets:
 # Writes the C string pointed by str to the standard output (stdout) and appends a newline character ('\n').
 # The function begins copying from the address specified (str) until it reaches the terminating null character ('\0').
 # This terminating null-character is not copied to the stream.
+# void puts ( const char *str )
 puts:
     # Parameters:
     # a0 (str): Pointer to C string to be printed
@@ -165,11 +165,12 @@ puts:
 
 
 # Convert string to integer
-# Parses the C-string str interpreting its content as an integral number, which is returned as a value of type int.
-# The function first discards as many whitespace characters (as in isspace) as necessary until the first non-whitespace character is found.
-# Then, starting from this character, takes an optional initial plus or minus sign followed by as many base-10 digits as possible, and interprets them as a numerical value.
-# The string can contain additional characters after those that form the integral number, which are ignored and have no effect on the behavior of this function.
-# If the first sequence of non-whitespace characters in str is not a valid integral number, or if no such sequence exists because either str is empty or it contains only whitespace characters, no conversion is performed and zero is returned.
+# Parses the C-string str into an integral number, which is returned as a value of type int.
+# The function discards as many whitespace characters (as in isspace) as necessary until the first non-whitespace is found.
+# Then, starting from this character, takes an optional initial plus or minus sign followed by as many base-10 digits as possible.
+# The string can contain additional characters after those that form the integral number, which are ignored.
+# If it is not a valid integral number, or if no such sequence exists because either str is empty or it contains only whitespace characters, no conversion is performed and zero is returned.
+# int atoi (const char *str)
 atoi:
     # Parameters:
     # a0 (str): Pointer to C string beginning with the representation of an integral number
@@ -285,6 +286,7 @@ atoi:
 # Stores the result in the array given by str parameter.
 # If base is 10 and value is negative, the resulting string is preceded with a minus sign (-).
 # With any other base, value is always considered unsigned.
+# char *itoa ( int value, char *str, int base )
 itoa:
     # Parameters:
     # a0 (value): Value (n) to be converted to a string
@@ -370,7 +372,7 @@ itoa:
         ret
 
 
-# int linked_list_search(Node *head_node, int val)
+# int linked_list_search (Node *head_node, int val)
 linked_list_search:
     # a0: Pointer to head_node
     # a1: value

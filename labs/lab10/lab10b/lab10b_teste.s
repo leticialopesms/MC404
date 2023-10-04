@@ -376,66 +376,68 @@ itoa:
         ret
 
 
-# int recursive_tree_search(Node *root, int val)
+# int recursive_tree_search (Node *root, int val)
 recursive_tree_search:
     # a0: Pointer to root_node
     # a1: value
-    li a7, 1            # a7 = counter = depth
-    LOOP_search_tree:
-        # --------------------------------- #
-        # --- Storing ra value on stack --- #
-        # --------------------------------- #
-        addi sp, sp, -16        # Allocates the routine frame
-        sw ra, 0(sp)            # Saves the return address
+    li a7, 0            # a7 = bool
+    # --------------------------------- #
+    # --- Storing ra value on stack --- #
+    # --------------------------------- #
+    addi sp, sp, -16    # Allocates the routine frame
+    sw ra, 0(sp)        # Saves the return address
 
-        # ------------------------------------ #
-        # --- Checking if the node is null --- #
-        # ------------------------------------ #
-        beqz a0, not_found
-    
-        # --------------------------------------------- #
-        # --- Storing the value of the current node --- #
-        # --------------------------------------------- #
-        # VAL
-        lw a2, 0(a0)        # a2 = VAL
+    # --------------------------------------------- #
+    # --- Storing the value of the current node --- #
+    # --------------------------------------------- #
+    lw a2, 0(a0)        # a2 = VAL
 
-        # ------------------------------ #
-        # --- Checking if (n == VAL) --- #
-        # ------------------------------ #
-        beq a1, a2, found   # if a1 == a2 then found
-        addi a7, a7, 1      # else updates depth
+    # ------------------------------ #
+    # --- Checking if (n == VAL) --- #
+    # ------------------------------ #
+    beq a1, a2, found   # if a1 == a2 then found
+    j left_node         # else updates depth
 
-        # -------------------------- #
-        # --- Checking left node --- #
-        # -------------------------- #
-        left_node:
-            addi a0, a0, 4          # Updates pointer a0
-            sw a0, 4(sp)            # Saves the pointer (a0) on the routine frame
-            jal LOOP_search_tree    # Performs the recursive call
-            lw a0, 4(sp)            # Loads the previous pointer (a0)
+    # -------------------------- #
+    # --- Checking left node --- #
+    # -------------------------- #
+    left_node:
+        addi a0, a0, 4              # Updates pointer a0
+            sw a0, 4(sp)                # Saves the pointer (a0) on the routine frame
+        lw a0, 0(a0)                # Loads the address of the left node
+        beqz a0, right_node         # if a0 == 0 then left_node == NULL
+        jal recursive_tree_search   # Performs the recursive call
+        beqz a7, right_node         # if a7 == 0 (not found yet) then right_node
+        addi a7, a7, 1              # else (found) updates depth (a7)
+        j end_search_tree
 
-        # --------------------------- #
-        # --- Checking right node --- #
-        # --------------------------- #
-        right_node:
-            addi a0, a0, 4          # Updates pointer a0
-            sw a0, 4(sp)            # Saves the pointer (a0) on the routine frame
-            jal LOOP_search_tree    # Performs the recursive call
-            lw a0, 4(sp)            # Loads the previous pointer (a0)
+    # --------------------------- #
+    # --- Checking right node --- #
+    # --------------------------- #
+    right_node:
+            lw a0, 4(sp)                # Loads the previous pointer (a0)
+        addi a0, a0, 4              # Updates pointer a0
+        sw a0, 4(sp)                # Saves the pointer (a0) on the routine frame
+        lw a0, 0(a0)                # Loads the address of the left node
+        beqz a0, not_found          # if a0 == 0 then right_node == NULL
+        jal recursive_tree_search   # Performs the recursive call
+        beqz a7, not_found          # if a7 == 0 (not found period) then not_found
+        addi a7, a7, 1              # else (found) updates depth (a7)
+        j end_search_tree
 
     end_search_tree:
         # --------------------------------- #
         # --- Storing ra value on stack --- #
         # --------------------------------- #
+        mv a0, a7
         lw ra, 0(sp)
         addi sp, sp, 16
         ret
     # a0 = function ret
     not_found:
-        li a0, 0
         j end_search_tree
     found:
-        mv a0, a7
+        li a7, 1
         j end_search_tree
 
 
@@ -464,8 +466,11 @@ factorial:
         ret
 
 main:
-    li a0, 5
-    jal factorial
+    la a0, root_node
+    li a1, 56
+    jal recursive_tree_search
+    li a6, 10
+    j exit
 
 
 .data
