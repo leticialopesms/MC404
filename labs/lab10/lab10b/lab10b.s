@@ -394,7 +394,7 @@ recursive_tree_search:
     # --- Checking if (n == VAL) --- #
     # ------------------------------ #
     beq a1, a2, found   # if a1 == a2 then found
-    j left_node         # else updates depth
+    j left_node         # else check deeper
 
     # -------------------------- #
     # --- Checking left node --- #
@@ -425,14 +425,14 @@ recursive_tree_search:
         j end_tree_search
 
     end_tree_search:
+        # a0 = function return = depth
+        mv a0, a7   # Moves a7 to a0
         # ----------------------------------- #
         # --- Restoring ra value on stack --- #
         # ----------------------------------- #
-        mv a0, a7       # Moves a7 to a0 (ret value)
         lw ra, 0(sp)
         addi sp, sp, 16
         ret
-        # a0 = function ret = depth
     not_found:
         j end_tree_search
     found:
