@@ -378,7 +378,7 @@ itoa:
 recursive_tree_search:
     # a0: Pointer to root_node
     # a1: value
-    li a7, 0            # a7 = bool
+    li a7, 0            # a7 = counter = depth
     # --------------------------------- #
     # --- Storing ra value on stack --- #
     # --------------------------------- #
