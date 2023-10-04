@@ -393,7 +393,7 @@ linked_list_search:
         lw a0, 0(a0)    # a0 = pointer to the next node
 
         # --- Checking if (VAL1 + VAL2 = input number) --- #
-        beq a1, a2, found   # if a0 == a1 then found
+        beq a1, a2, found   # if a1 == a2 then found
         addi a7, a7, 1      # else update counter
         
         # --- Checking if NEXT note is NULL --- #
