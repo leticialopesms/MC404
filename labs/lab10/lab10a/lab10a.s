@@ -414,11 +414,13 @@ itoa:
         sb a3, 0(a1)
         # now a1 points to '\0'
         mv a0, t1
+        
         # # ------------------------------------- #
         # # --- Restoring the begining of str --- #
         # # ------------------------------------- #
         # lw a0, 0(sp)    # a0 = begining of str
         # addi sp, sp, 4  # Updates stack
+
         # returns a pointer to the string
         ret
 
