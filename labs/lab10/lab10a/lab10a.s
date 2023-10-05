@@ -3,8 +3,6 @@
 .globl exit
 .globl read
 .globl write
-# .globl find_eof
-.globl find_null
 .globl puts
 .globl gets
 .globl atoi
@@ -51,33 +49,6 @@ write:
     ret
 
 
-# find_eof:
-#     # Parameters: 
-#     # a0: pointer to a string
-#     lb a1, 0(a0)            # a1 = byte from the memory address a0 + 0
-#     addi a0, a0, 1          # Updates a0 pointer
-#     li a2, 10               # a2 = 10
-#     beq a1, a2, found_eof   # if a1 == a2 then found_eof
-#     j find_eof
-    
-#     found_eof:
-#         addi a0, a0, -1     # Update a0 pointer
-#         # returns the position of '\n'
-#         ret
-
-
-find_null:
-    # Parameters:
-    # a0: pointer to a string
-    lb a1, 0(a0)            # a1 = byte from the memory address a0 + 0
-    addi a0, a0, 1          # Updates a0 pointer
-    li a2, 0                # a2 = 0
-    bne a1, a2, find_null   # if a1 != a2 then find_null
-    addi a0, a0, -1         # Update a0 pointer
-    # returns the position of '\0'
-    ret
-
-
 # Get string from stdin
 # Reads characters from the stdin and stores them as C string into str (a0) until a newline character or the end-of-file is reached.
 # The newline character (\n), if found, is not copied into str.
@@ -87,46 +58,65 @@ gets:
     # Parameters:
     # a0 (str): Pointer to a block of memory (array of char) where the string read is copied as a C string
     
+    # --------------------------------- #
     # --- Storing ra value on stack --- #
+    # --------------------------------- #
     addi sp, sp, -4
     sw ra, 0(sp)
 
+    # -------------------------------------------- #
     # --- Storing the begining of str on stack --- #
+    # -------------------------------------------- #
     addi sp, sp, -4
     sw a0, 0(sp)
 
+    # ---------------------------------------------------- #
     # --- Storing the current position of str on stack --- #
+    # ---------------------------------------------------- #
     addi sp, sp, -4
     sw a0, 0(sp)
 
+    # ------------------------------- #
     # --- Reading from the buffer --- #
+    # ------------------------------- #
     find_eof:
-        # --- Restoring current position of str on stack --- #
+        # --- Restoring current position on stack --- #
         lw a1, 0(sp)
 
         # --- Calling the read funtion --- #
-        li a0, 0    # a0: file descriptor (stdin = 0)
-                    # a1: buffer
-        li a2, 1    # a2: size (bytes)
+        li a0, 0        # a0: file descriptor (stdin = 0)
+                        # a1: buffer
+        li a2, 1        # a2: size (bytes)
         jal read
+
+        # --- Getting current byte --- #
+        lb a2, 0(a1)    # a2 = byte from 'a0 + 0' memory position
+        li a3, '\n'     # a3 = 10
+
+        # --- Storing next position of str on stack --- #
+        addi a1, a1, 1  # Updates a1 pointer
+        sw a1, 0(sp)    # Stores a1 on stack
+
+        # --- Checking if '\n' was found --- #
+        bne a2, a3, find_eof    # if a2 != a3 then find_eof
+        addi a1, a1, -1         # else, a1 now points to '\n'
+        sw a1, 0(sp)            # Stores a1 on stack
     
-        lb a2, 0(a1)        # Loads the byte from 'a0 + 0' memory position
-        li a3, '\n'         # a3 = 10
+    # -------------------------------------------- #
+    # --- Updating the current position of str --- #
+    # -------------------------------------------- #
+    lw a0, 0(sp)        # a0 = end of str (points to '\n')
+    addi sp, sp, 4      # Updates stack
 
-        addi a1, a1, 1     # else update a1 pointer
-        # --- Storing current position of str on stack --- #
-        sw a1, 0(sp)
-
-        bne a2, a3, find_eof    # if a0 != t1 then find_eof
-        addi sp, sp, 4
-        mv a0, a1
-        # Now, a0 points to '\n'
-
+    # -------------------------------------- #
     # --- Adding the null character '\0' --- #
+    # -------------------------------------- #
     li a1, 0
     sb a1, 0(a0)
 
+    # ------------------------------------ #
     # --- Updating the begining of str --- #
+# ---------------------------------------- #
     lw a0, 0(sp)
     addi sp, sp, 4
 
@@ -144,41 +134,72 @@ gets:
 puts:
     # Parameters:
     # a0 (str): Pointer to C string to be printed
-    mv t1, a0   # t1 = pointer to str
     
+    # --------------------------------- #
     # --- Storing ra value on stack --- #
+    # --------------------------------- #
     addi sp, sp, -4
     sw ra, 0(sp)
 
-    # --- Reaching the '\0' character --- #
-    mv a0, t1
-    jal find_null
-    # Now, a0 points to '\0'
+    # -------------------------------------------- #
+    # --- Storing the begining of str on stack --- #
+    # -------------------------------------------- #
+    addi sp, sp, -4
+    sw a0, 0(sp)
 
+    # ----------------------------------- #
+    # --- Reaching the '\0' character --- #
+    # ----------------------------------- #
+    find_null:
+        lb a1, 0(a0)            # a1 = byte from the memory address a0 + 0
+        addi a0, a0, 1          # Updates a0 pointer
+        li a2, 0                # a2 = 0
+        bne a1, a2, find_null   # if a1 != a2 then find_null
+        addi a0, a0, -1         # else updates a0 pointer
+        # Now, a0 points to '\0'
+
+    # ----------------------------------------- #
     # --- Adding the newline character '\n' --- #
+    # ----------------------------------------- #
     li a1, '\n'
     sb a1, 0(a0)
 
-    # --- Restoring the begining of str --- #
-    mv t2, a0       # t2 = end of string
-    addi t3, t2, 1
-    sub t3, t3, t1  # t3 = size of str
+    # ------------------------------------- #
+    # --- Getting the begining of str --- #
+    # ------------------------------------- #
+    lw a1, 0(sp)    # a1 = begining of str
 
+    # ------------------------------- #
+    # --- Getting the size of str --- #
+    # ------------------------------- #
+    addi a0, a0, 1  # a0 = end of str + 1
+    sub a2, a0, a1  # a2 = size of str
+
+    # --------------------------------- #
     # --- Calling the write funtion --- #
+    # --------------------------------- #
     li a0, 1    # a0: file descriptor (stdout = 1)
-    mv a1, t1   # a1: buffer
-    mv a2, t3   # a2: size (bytes)
+                # a1: buffer
+                # a2: size (bytes)
     jal write
 
+    # ----------------------------------------- #
     # --- Restoring the null character '\0' --- #
-    mv a0, t2
+    # ----------------------------------------- #
+    add a0, a1, a2  # a0 = begining of str + size of str
+    addi a0, a0, -1 # a0 now points to '\n'
     li a1, 0
     sb a1, 0(a0)
 
+    # ------------------------------------- #
     # --- Restoring the begining of str --- #
-    mv a0, t1
+    # ------------------------------------- #
+    lw a0, 0(sp)    # a0 = begining of str
+    addi sp, sp, 4  # Updates stack
 
+    # ------------------------------------- #
     # --- Recovering ra value on stack --- #
+    # ------------------------------------- #
     lw ra, 0(sp)
     addi sp, sp, 4
     ret
@@ -194,7 +215,6 @@ puts:
 atoi:
     # Parameters:
     # a0 (str): Pointer to C string beginning with the representation of an integral number
-    mv t1, a0       # t1 = pointer to str
     addi a0, a0, -1 # sets pointer a0 to 1 position before the first byte
 
     # ------------------------------------------ #
@@ -316,6 +336,12 @@ itoa:
     mv t1, a1
     li a5, 0    # a5 = number of digits in n
 
+    # # -------------------------------------------- #
+    # # --- Storing the begining of str on stack --- #
+    # # -------------------------------------------- #
+    # addi sp, sp, -4
+    # sw a1, 0(sp)
+
     # ---------------------------- #
     # --- Checking if (n == 0) --- #
     # ---------------------------- #
@@ -388,6 +414,11 @@ itoa:
         sb a3, 0(a1)
         # now a1 points to '\0'
         mv a0, t1
+        # # ------------------------------------- #
+        # # --- Restoring the begining of str --- #
+        # # ------------------------------------- #
+        # lw a0, 0(sp)    # a0 = begining of str
+        # addi sp, sp, 4  # Updates stack
         # returns a pointer to the string
         ret
 
