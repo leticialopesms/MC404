@@ -91,6 +91,7 @@ find_null:
 gets:
     # Parameters:
     # a0 (str): Pointer to a block of memory (array of char) where the string read is copied as a C string
+
     mv t1, a0   # t1 = pointer to str
     
     # --- Storing ra value on stack --- #
@@ -128,8 +129,9 @@ gets:
 puts:
     # Parameters:
     # a0 (str): Pointer to C string to be printed
+
     mv t1, a0   # t1 = pointer to str
-    
+
     # --- Storing ra value on stack --- #
     addi sp, sp, -4
     sw ra, 0(sp)
@@ -177,6 +179,7 @@ puts:
 atoi:
     # Parameters:
     # a0 (str): Pointer to C string beginning with the representation of an integral number
+
     mv t1, a0       # t1 = pointer to str
     addi a0, a0, -1 # sets pointer a0 to 1 position before the first byte
 
@@ -312,7 +315,7 @@ itoa:
     # --- Checking if (n < 0) --- #
     # --------------------------- #
     li a3, 16
-    beq a2, a3, LOOP_stack_up_int # if a2 == a3 then LOOP_stack_up_int
+    beq a2, a3, LOOP_stack_up_int   # if a2 == a3 then LOOP_stack_up_int
 
     bge a0, zero, LOOP_stack_up_int # if a0 >= zero then LOOP_stack_up_int
     li a3, '-'      # else
@@ -377,7 +380,8 @@ itoa:
 # int recursive_tree_search (Node *root, int val)
 recursive_tree_search:
     # a0: Pointer to root_node
-    # a1: value
+    # a1: 
+
     li a7, 0            # a7 = counter = depth
     # --------------------------------- #
     # --- Storing ra value on stack --- #
