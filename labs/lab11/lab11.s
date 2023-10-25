@@ -1,5 +1,9 @@
 .text
 .globl _start
+.globl set_gps
+.globl get_gps
+.globl power_on
+.globl power_off
 .set MEMORY_SPACE, 0xFFFF0100
 .set X_FINAL, 73
 .set Y_FINAL, 1
@@ -14,28 +18,29 @@ exit:
     ecall
 
 
-main:
-    # ----------- #
-    # --- GPS --- #
-    # ----------- #
+set_gps:
     # base + 0x00
     # Storing “1” triggers the GPS device to start reading
     li a0, MEMORY_SPACE
     addi a0, a0, 0x00
     li a1, 1
     sb a1, 0(a0)
+    ret
 
-    # ------------------------- #
-    # --- Ultrasonic Sensor --- #
-    # ------------------------- #
-    # base + 0x02
-    # Storing “1” triggers the Ultrasonic Sensor to measure the
-    # distance between the car and the obstacle in front of it
+
+get_gps:
+    # base + 0x00
+    # Checking if the GPS already got all the info needed
+    # Busy Waiting
+    # The value on a0 is set to 0 when the reading is completed
     li a0, MEMORY_SPACE
-    addi a0, a0, 0x02
-    li a1, 0
-    sb a1, 0(a0)
+    addi a0, a0, 0x00
+    lb a1, 0(a0)
+    bnez a1, get_gps
+    ret
 
+
+power_on:
     # ------------------ #
     # --- Hand break --- #
     # ------------------ #
@@ -46,33 +51,6 @@ main:
     li a1, 0
     sb a1, 0(a0)
 
-    # check_x:
-    # # ------------------------------- #
-    # # --- Checking the X position --- #
-    # # ------------------------------- #
-    # # base + 0x10
-    # # Stores the X-axis of the car current position
-    # li a0, MEMORY_SPACE
-    # addi a0, a0, 0x10
-    # lw a1, 0(a0)
-    # li a2, X_FINAL
-    # bge a1, a2, move_foward # if a1 >= a2 then move_foward
-    # j end_main
-
-    check_z:
-    # ------------------------------- #
-    # --- Checking the Z position --- #
-    # ------------------------------- #
-    # base + 0x18
-    # Stores the X-axis of the car current position
-    li a0, MEMORY_SPACE
-    addi a0, a0, 0x18
-    lw a1, 0(a0)
-    li a2, Z_FINAL
-    bge a1, a2, move_foward # if a1 >= a2 then move_foward
-    j end_main
-
-    move_foward:
     # ------------------------------ #
     # --- Powering on the engine --- #
     # ------------------------------ #
@@ -83,14 +61,10 @@ main:
     addi a0, a0, 0x21
     li a1, 1
     sb a1, 0(a0)
+    ret
 
-    LOOP:
-    li a0, MEMORY_SPACE
-    addi a0, a0, 0x18
-    lw a1, 0(a0)
-    li a2, Z_FINAL
-    bge a2, a1, LOOP # if a1 >= a2 then LOOP
 
+power_off:
     # ------------------------------- #
     # --- Powering off the engine --- #
     # ------------------------------- #
@@ -102,39 +76,53 @@ main:
     li a1, 0
     sb a1, 0(a0)
 
+    # ------------------ #
+    # --- Hand break --- #
+    # ------------------ #
+    # base + 0x22
+    # Storing “1” enables the hand break
+    li a0, MEMORY_SPACE
+    addi a0, a0, 0x22
+    li a1, 1
+    sb a1, 0(a0)
+    ret
+
+
+main:
+    # ----------- #
+    # --- GPS --- #
+    # ----------- #
+    # Getting all the information from the GPS device
+    jal set_gps
+    jal get_gps
+
+    check_z:
+    # ------------------------------- #
+    # --- Checking the Z position --- #
+    # ------------------------------- #
+    # base + 0x18
+    # Storing the Z-axis of the car current position
+    li a0, MEMORY_SPACE
+    addi a0, a0, 0x18
+    lw a1, 0(a0)
+    li a2, Z_FINAL
+    bge a2, a1, move_foward # if a2 >= a1 then move_foward
+    j end_main
+
+    move_foward:
+    jal power_on
+
+    LOOP:
+    jal set_gps
+    jal get_gps
+    li a0, MEMORY_SPACE
+    addi a0, a0, 0x18
+    lw a1, 0(a0)
+    li a2, Z_FINAL
+    bge a2, a1, LOOP # if a2 >= a1 then LOOP
     j end_main
 
     end_main:
-        # ------------------ #
-        # --- Hand break --- #
-        # ------------------ #
-        # base + 0x22
-        # Storing “1” enables the hand break
-        li a0, MEMORY_SPACE
-        addi a0, a0, 0x22
-        li a1, 1
-        sb a1, 0(a0)
-
-        # ------------------------- #
-        # --- Ultrasonic Sensor --- #
-        # ------------------------- #
-        # base + 0x02
-        # Storing “0” triggers the Ultrasonic Sensor to stop measurig the
-        # distance between the car and the obstacle in front of it
-        li a0, MEMORY_SPACE
-        addi a0, a0, 0x02
-        li a1, 0
-        sb a1, 0(a0)
-
-        # ----------- #
-        # --- GPS --- #
-        # ----------- #
-        # base + 0x00
-        # Storing “0” triggers the GPS device to stop reading
-        li a0, MEMORY_SPACE
-        addi a0, a0, 0x00
-        li a1, 0
-        sb a1, 0(a0)
-        
+        jal power_off
         j exit
 
