@@ -331,6 +331,7 @@ atoi:
     li a5, 0    # a5 = counter = number of digits in n
     li a6, 1    # a6 = multiplication factor
     li a7, 0    # a7 = n
+
     # -------------------------------- #
     # --- Checking the number sign --- #
     # -------------------------------- #
@@ -423,29 +424,13 @@ itoa:
     mv t1, a1
     li a5, 0    # a5 = number of digits in n
 
-    # # -------------------------------------------- #
-    # # --- Storing the begining of str on stack --- #
-    # # -------------------------------------------- #
-    # addi sp, sp, -4
-    # sw a1, 0(sp)
-
-    # ---------------------------- #
-    # --- Checking if (n == 0) --- #
-    # ---------------------------- #
-    li a3, '0'
-    sb a3, 0(a1)
-    addi a1, a1, 1  # updates the pointer a1
-    beqz a0, end_itoa
-    addi a1, a1, -1 # updates the pointer a1
-                    # basically ignores what was added
-
     # --------------------------- #
     # --- Checking if (n < 0) --- #
     # --------------------------- #
     li a3, 16
-    beq a2, a3, LOOP_stack_up_int # if a2 == a3 then LOOP_stack_up_int
-
-    bge a0, zero, LOOP_stack_up_int # if a0 >= zero then LOOP_stack_up_int
+    beq a2, a3, LOOP_stack_up_int   # if a2 == a3 (base == 16) then LOOP_stack_up_int
+    bge a0, zero, LOOP_stack_up_int # if a0 >= 0 (n >= 0) then LOOP_stack_up_int
+    
     li a3, '-'      # else
     sb a3, 0(a1)    # stores the negative sign in the string
     addi a1, a1, 1  # updates the pointer a1
@@ -501,12 +486,6 @@ itoa:
         sb a3, 0(a1)
         # now a1 points to '\0'
         mv a0, t1
-        
-        # # ------------------------------------- #
-        # # --- Restoring the begining of str --- #
-        # # ------------------------------------- #
-        # lw a0, 0(sp)    # a0 = begining of str
-        # addi sp, sp, 4  # Updates stack
 
         # returns a pointer to the string
         ret
@@ -525,7 +504,7 @@ reverse_string:
 
     # --------------------------------------------- #
     # --- Storing the begining of str2 on stack --- #
-    # ----------------------------*---------------- #
+    # --------------------------------------------- #
     addi sp, sp, -4
     sw a1, 0(sp)
 
@@ -539,7 +518,7 @@ reverse_string:
     sub t3, a0, t1  # t3 = size of string
     addi t1, a0, -1 # t1 = a0 - 1 = end of string
 
-    # --- Coping to str2 --- #
+    # --- Copying to str2 --- #
     # t1 = current byte of str1
     # t2 = current byte of str2
     # t3 = size of string
@@ -550,28 +529,27 @@ reverse_string:
         addi t2, t2, 1
         addi t3, t3, -1
         bnez t3, copy
-        
-    reversed:
+
     li t4, 0
     sb t4, 0(t2)
 
     # ------------------------------------- #
     # --- Restoring the begining of str --- #
     # ------------------------------------- #
-    lw a1, 0(sp)    # a0 = begining of str
+    lw a0, 0(sp)    # a0 = begining of str
     addi sp, sp, 4  # Updates stack
 
-    # ------------------------------------- #
+    # ------------------------------------ #
     # --- Recovering ra value on stack --- #
-    # ------------------------------------- #
+    # ------------------------------------ #
     lw ra, 0(sp)
     addi sp, sp, 4
+
     # returns the pointer to the reversed stirng
-    mv a0, a1
     ret
 
-# main
 
+# main
 main:
     la a0, buffer
     jal gets
@@ -600,7 +578,7 @@ main:
         la a0, buffer
         jal gets
         # --- Reversing string --- #
-        la a1, rev
+        la a1, reversed
         jal reverse_string
         # --- Printing string --- #
         jal puts
@@ -657,13 +635,13 @@ main:
         # s2 = second number
         # s3 = operator
         li t1, '+'
-        beq s3, t1, sum # if s3 == t1 then sum
+        beq s3, t1, sum     # if s3 == t1 then sum
         li t1, '-'
-        beq s3, t1, subt # if s3 == t1 then subt
+        beq s3, t1, subt    # if s3 == t1 then subt
         li t1, '*'
-        beq s3, t1, mult # if s3 == t1 then mult
+        beq s3, t1, mult    # if s3 == t1 then mult
         li t1, '/'
-        beq s3, t1, divi # if s3 == t1 then divi
+        beq s3, t1, divi    # if s3 == t1 then divi
         # else (just in case)
         li a0, 0
 
@@ -696,5 +674,5 @@ main:
 
 .data
 buffer: .skip 0x80
-rev: .skip 0x80
+reversed: .skip 0x80
 number: .skip 0x20
