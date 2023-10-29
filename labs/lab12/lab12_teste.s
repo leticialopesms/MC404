@@ -1,60 +1,122 @@
 .text
 .globl _start
-.globl exit
-.globl read
-.globl write
-.globl puts
-.globl gets
-.globl atoi
-.globl itoa
+.set MEMORY_SPACE, 0xFFFF0100
 
 
 _start:
     j main
 
 
-exit:
+_exit:
     li a7, 93       # a7: syscall exit (93)
     ecall
 
 
-open:
-    # a0: address for the file path
-    li a1, 0        # a1 = flags (0: rdonly, 1: wronly, 2: rdwr)
-    li a2, 0        # a2 = mode
-    li a7, 1024     # a7 = syscall open (1024)
-    ecall
-    ret
-
-
-close:
-    # a0: address for the file path
-    li a7, 57       # a7: syscall close (57)
-    ecall
-    ret
-
-
 read:
-    # a0: file descriptor (stdin = 0)
-    # a1: buffer
-    # a2: size (bytes)
-    li a7, 63       # a7: syscall read (63)
-    ecall
+    # Parameters:
+    # a1 (buffer): pointer to buffer where the byte read will be stored
+
+    # ------------------------ #
+    # --- Starting reading --- #
+    # ------------------------ #
+    # base + 0x02
+    # Storing the value 1 triggers a read
+    li t1, MEMORY_SPACE
+    addi t1, t1, 0x02
+    li t2, 1        # t2 = 1
+    sb t2, 0(t1)    # t1 = base + 0x02
+
+    # -------------------- #
+    # --- Reading byte --- #
+    # -------------------- #
+    # base + 0x03
+    # Reading one byte and storing it at base + 0x03
+
+    # Busy waiting:
+    # The byte at base + 0x02 is set to 0 when read is complete
+    reading:
+        li t1, MEMORY_SPACE
+        addi t1, t1, 0x02
+        lb t2, 0(t1)
+        bnez t2, reading    # if t2 != 0 then reading
+
+    # -------------------- #
+    # --- Storing byte --- #
+    # -------------------- #
+    # base + 0x03
+    # Storing the byte read from base + 0x03 on buffer
+    li t1, MEMORY_SPACE
+    addi t1, t1, 0x03
+    lb a0, 0(t1)    # a0 = byte read
+    sb a0, 0(a1)    # stores byte on buffer
+    
+    # Returns the byte read
     ret
 
 
 write:
-    # a0: file descriptor (stdout = 1)
-    # a1: buffer
-    # a2: size (bytes)
-    li a7, 64       # a7: syscall write (64)
-    ecall
+    # Parameters:
+    # a1 (buffer): pointer to buffer where the byte is stored
+
+    # -------------------- #
+    # --- Storing byte --- #
+    # -------------------- #
+    # base + 0x01
+    # Storing the byte from buffer to be wrtitten at base + 0x01
+    li t1, MEMORY_SPACE
+    addi t1, t1, 0x01
+    lb a0, 0(a1)    # a0 = byte to be written
+    sb a0, 0(t1)    # stores byte on base + 0x01
+
+    # ------------------------ #
+    # --- Starting writing --- #
+    # ------------------------ #
+    # base + 0x00
+    # Storing the value 1 triggers a write
+    li t1, MEMORY_SPACE
+    addi t1, t1, 0x00
+    li t2, 1        # t2 = 1
+    sb t2, 0(t1)    # t1 = base + 0x00
+
+    # -------------------- #
+    # --- Writing byte --- #
+    # -------------------- #
+    # base + 0x01
+    # Writing the byte that is stored at base + 0x01
+
+    # Busy waiting:
+    # The byte at base + 0x00 is set to 0 when write is complete
+    writing:
+        li t1, MEMORY_SPACE
+        addi t1, t1, 0x00
+        lb t2, 0(t1)
+        bnez t2, writing    # if t2 != 0 then writing
+    
+    # Returns the byte written
     ret
+
+
+# read:
+#     # a0: file descriptor (stdin = 0)
+#     # a1: buffer
+#     # a2: size (bytes)
+#     li a7, 63       # a7: syscall read (63)
+#     ecall
+#     ret
+
+
+# write:
+#     # a0: file descriptor (stdout = 1)
+#     # a1: buffer
+#     # a2: size (bytes)
+#     li a7, 64       # a7: syscall write (64)
+#     ecall
+#     ret
 
 
 ignore_whitespace:
     lb t1, 0(a0)    # t1 = current byte (from memory address a0 + 0)
-    addi a0, a0, 1  # Updates pointer a0
+    addi a0, a0, 1  # updates pointer a0
 
     li t2, ' '
     beq t1, t2, ignore_whitespace
@@ -87,7 +149,7 @@ find_newline:
     addi a0, a0, 1              # Updates pointer a0
     bne a1, a2, find_newline    # if a1 != a2 then find_eof
     addi a0, a0, -1             # Updates pointer a0
-    # returns the position of '\n'
+    # Returns the position of '\n'
     ret
 
 
@@ -99,7 +161,7 @@ find_null:
     addi a0, a0, 1          # Updates pointer a0
     bne a1, a2, find_null   # if a1 != a2 then find_null
     addi a0, a0, -1         # Updates pointer a0
-    # returns the position of '\0'
+    # Returns the position of '\0'
     ret
 
 
@@ -111,15 +173,12 @@ find_space:
     addi a0, a0, 1          # Updates pointer a0
     bne a1, a2, find_space  # if a1 != a2 then find_space
     addi a0, a0, -1         # Updates pointer a0
-    # returns the position of ' '
+    # Returns the position of ' '
     ret
 
 
 # Get string from stdin
-# Reads characters from the stdin and stores them as C string into str (a0) until a newline character or the end-of-file is reached.
-# The newline character (\n), if found, is not copied into str.
-# A terminating null character (\0) is automatically appended after the characters copied to str.
-# char *gets ( char *str )
+# char *gets (char *str )
 gets:
     # Parameters:
     # a0 (str): Pointer to a block of memory (array of char) where the string read is copied
@@ -156,15 +215,15 @@ gets:
         jal read
 
         # --- Getting current byte --- #
-        lb a2, 0(a1)    # a2 = byte from 'a0 + 0' memory position
+        lb a2, 0(a1)    # a2 = byte from 'a1 + 0' memory position
         li a3, '\n'     # a3 = 10
 
         # --- Checking if '\n' was found --- #
         beq a2, a3, end_gets    # if a2 == a3 then end_gets
 
         # --- Storing next position of str on stack --- #
-        addi a1, a1, 1  # Updates a1 pointer
-        sw a1, 0(sp)    # Stores a1 on stack
+        addi a1, a1, 1  # updates a1 pointer
+        sw a1, 0(sp)    # stores a1 on stack
         j 1b
 
     end_gets:
@@ -172,7 +231,7 @@ gets:
         # --- Updating the current position of str --- #
         # -------------------------------------------- #
         lw a0, 0(sp)        # a0 = end of str (points to '\n')
-        addi sp, sp, 4      # Updates stack
+        addi sp, sp, 4      # updates stack
 
         # -------------------------------------- #
         # --- Adding the null character '\0' --- #
@@ -202,7 +261,7 @@ get_number:
     # ------------------------------------------------ #
     # --- Storing the begining of str_num on stack --- #
     # ------------------------------------------------ #
-    addi sp, sp, -4     # Updates stack
+    addi sp, sp, -4     # updates stack
     sw a1, 0(sp)        # a1 = begining of str_num
 
     # ------------------------------------- #
@@ -237,20 +296,17 @@ get_number:
         # --- Restoring the begining of str_num from stack --- #
         # ---------------------------------------------------- #
         lw a0, 0(sp)        # a0 = begining of str_num
-        addi sp, sp, 4      # Updates stack
+        addi sp, sp, 4      # updates stack
 
         ret
 
 
 # Write string to stdout
-# Writes the C string pointed by str to the standard output (stdout) and appends a newline character ('\n').
-# The function begins copying from the address specified (str) until it reaches the terminating null character ('\0').
-# This terminating null-character is not copied to the stream.
-# void puts ( const char *str )
+# void puts (const char *str )
 puts:
     # Parameters:
     # a0 (str): Pointer to C string to be printed
-    
+
     # --------------------------------- #
     # --- Storing ra value on stack --- #
     # --------------------------------- #
@@ -263,70 +319,76 @@ puts:
     addi sp, sp, -4
     sw a0, 0(sp)
 
-    # ----------------------------------- #
-    # --- Reaching the '\0' character --- #
-    # ----------------------------------- #
+    # ---------------------------------------------------- #
+    # --- Storing the current position of str on stack --- #
+    # ---------------------------------------------------- #
+    addi sp, sp, -4
+    sw a0, 0(sp)
+
+    # ------------------------- #
+    # --- Writing on buffer --- #
+    # ------------------------- #
     1:
-        lb a1, 0(a0)        # a1 = byte from the memory address a0 + 0
-        addi a0, a0, 1      # Updates a0 pointer
-        li a2, 0            # a2 = 0
-        bne a1, a2, 1b      # if a1 != a2 then 1b
-        addi a0, a0, -1     # else updates a0 pointer
-        # Now, a0 points to '\0'
+        # --- Restoring current position on stack --- #
+        lw a1, 0(sp)    # a1 = adress of current byte
 
-    # ----------------------------------------- #
-    # --- Adding the newline character '\n' --- #
-    # ----------------------------------------- #
-    li a1, '\n'
-    sb a1, 0(a0)
+        # --- Getting current byte --- #
+        lb a2, 0(a1)    # a2 = byte from 'a1 + 0' memory position
+        li a3, 0        # a3 = 0
 
-    # ------------------------------------- #
-    # --- Getting the begining of str --- #
-    # ------------------------------------- #
-    lw a1, 0(sp)    # a1 = begining of str
+        # --- Checking if '\0' (null) was found --- #
+        beq a2, a3, end_puts    # if a2 == a3 then end_puts
 
-    # ------------------------------- #
-    # --- Getting the size of str --- #
-    # ------------------------------- #
-    addi a0, a0, 1  # a0 = end of str + 1
-    sub a2, a0, a1  # a2 = size of str
+        # --- Calling the write funtion --- #
+        li a0, 1        # a0: file descriptor (stdout = 1)
+                        # a1: buffer
+        li a2, 1        # a2: size (bytes)
+        jal write
 
-    # --------------------------------- #
-    # --- Calling the write funtion --- #
-    # --------------------------------- #
-    li a0, 1    # a0: file descriptor (stdout = 1)
-                # a1: buffer
-                # a2: size (bytes)
-    jal write
+        # --- Storing next position of str on stack --- #
+        addi a1, a1, 1  # updates a1 pointer
+        sw a1, 0(sp)    # stores a1 on stack
+        j 1b
 
-    # ----------------------------------------- #
-    # --- Restoring the null character '\0' --- #
-    # ----------------------------------------- #
-    add a0, a1, a2  # a0 = begining of str + size of str
-    addi a0, a0, -1 # a0 now points to '\n'
-    li a1, 0
-    sb a1, 0(a0)
+    end_puts:
+        # -------------------------------------------- #
+        # --- Updating the current position of str --- #
+        # -------------------------------------------- #
+        lw a1, 0(sp)        # a1 = end of str (points to null)
+        addi sp, sp, 4      # updates stack
 
-    # ------------------------------------- #
-    # --- Restoring the begining of str --- #
-    # ------------------------------------- #
-    lw a0, 0(sp)    # a0 = begining of str
-    addi sp, sp, 4  # Updates stack
+        # --------------------- #
+        # --- Printing '\n' --- #
+        # --------------------- #
+         # --- Adding the newline character '\n' --- #
+        li a2, '\n'     # a2 = 10
+        sb a2, 0(a1)    # stores a2 on 'a1 + 0' memory position
 
-    # ------------------------------------- #
-    # --- Recovering ra value on stack --- #
-    # ------------------------------------- #
-    lw ra, 0(sp)
-    addi sp, sp, 4
-    ret
+        # --- Calling the write funtion --- #
+        li a0, 1        # a0: file descriptor (stdout = 1)
+                        # a1: buffer
+        li a2, 1        # a2: size (bytes)
+        jal write
+
+        # --- Adding the null character '\0' --- #
+        li a2, 0        # a2 = 0
+        sb a2, 0(a1)    # stores a2 on 'a1 + 0' memory position
+
+        # ------------------------------------ #
+        # --- Updating the begining of str --- #
+        # ------------------------------------ #
+        lw a0, 0(sp)
+        addi sp, sp, 4
+
+        # ------------------------------------ #
+        # --- Recovering ra value on stack --- #
+        # ------------------------------------ #
+        lw ra, 0(sp)
+        addi sp, sp, 4
+        ret
 
 
 # Convert string to integer
-# Parses the C-string str into an integral number, which is returned as a value of type int.
-# The function discards as many whitespace characters (as in isspace) as necessary until the first non-whitespace is found.
-# Then, starting from this character, takes an optional initial plus or minus sign followed by as many base-10 digits as possible.
-# The string can contain additional characters after those that form the integral number, which are ignored.
-# If it is not a valid integral number, or if no such sequence exists because either str is empty or it contains only whitespace characters, no conversion is performed and zero is returned.
 # int atoi (const char *str)
 atoi:
     # Parameters:
@@ -349,6 +411,7 @@ atoi:
     li a5, 0    # a5 = counter = number of digits in n
     li a6, 1    # a6 = multiplication factor
     li a7, 0    # a7 = n
+
     # -------------------------------- #
     # --- Checking the number sign --- #
     # -------------------------------- #
@@ -425,49 +488,29 @@ atoi:
         lw ra, 0(sp)
         addi sp, sp, 4
 
-        # returns integer n if valid
+        # Returns integer n if valid
         # or 0 if invalid
         ret
 
 
 # Convert integer to string (non-standard function)
-# Converts an integer value to a null-terminated string using the specified base.
-# Stores the result in the array given by str parameter.
-# If base is 10 and value is negative, the resulting string is preceded with a minus sign (-).
-# With any other base, value is always considered unsigned.
-# char *itoa ( int value, char *str, int base )
+# char *itoa (int value, char *str, int base )
 itoa:
     # Parameters:
     # a0 (value): Value (n) to be converted to a string
     # a1 (str): Pointer to array in memory where to store the resulting null-terminated string
     # a2 (base): Numerical base used to represent the value as a string (10 or 16)
     
-    mv t1, a1
+    mv t1, a1   # t1 = pointer to str
     li a5, 0    # a5 = number of digits in n
-
-    # # -------------------------------------------- #
-    # # --- Storing the begining of str on stack --- #
-    # # -------------------------------------------- #
-    # addi sp, sp, -4
-    # sw a1, 0(sp)
-
-    # ---------------------------- #
-    # --- Checking if (n == 0) --- #
-    # ---------------------------- #
-    li a3, '0'
-    sb a3, 0(a1)
-    addi a1, a1, 1  # updates the pointer a1
-    beqz a0, end_itoa
-    addi a1, a1, -1 # updates the pointer a1
-                    # basically ignores what was added
 
     # --------------------------- #
     # --- Checking if (n < 0) --- #
     # --------------------------- #
     li a3, 16
-    beq a2, a3, LOOP_stack_up_int # if a2 == a3 then LOOP_stack_up_int
+    beq a2, a3, LOOP_stack_up_int   # if a2 == a3 (base == 16) then LOOP_stack_up_int
+    bge a0, zero, LOOP_stack_up_int # if a0 >= 0 (n >= 0) then LOOP_stack_up_int
 
-    bge a0, zero, LOOP_stack_up_int # if a0 >= zero then LOOP_stack_up_int
     li a3, '-'      # else
     sb a3, 0(a1)    # stores the negative sign in the string
     addi a1, a1, 1  # updates the pointer a1
@@ -503,6 +546,7 @@ itoa:
         li a4, 10
         blt a3, a4, to_char # if a3 < a4 then to_char
         addi a3, a3, 7      # else considers letters 'a' to 'f'
+
         to_char:
             addi a3, a3, 48 # converts value in a3 to char, according to ASCII table
     
@@ -521,16 +565,10 @@ itoa:
     end_itoa:
         li a3, 0
         sb a3, 0(a1)
-        # now a1 points to '\0'
+        # Now a1 points to '\0'
         mv a0, t1
-        
-        # # ------------------------------------- #
-        # # --- Restoring the begining of str --- #
-        # # ------------------------------------- #
-        # lw a0, 0(sp)    # a0 = begining of str
-        # addi sp, sp, 4  # Updates stack
 
-        # returns a pointer to the string
+        # Returns a pointer to the string
         ret
 
 # Reverse a variable size string
@@ -547,7 +585,7 @@ reverse_string:
 
     # --------------------------------------------- #
     # --- Storing the begining of str2 on stack --- #
-    # ----------------------------*---------------- #
+    # --------------------------------------------- #
     addi sp, sp, -4
     sw a1, 0(sp)
 
@@ -561,7 +599,7 @@ reverse_string:
     sub t3, a0, t1  # t3 = size of string
     addi t1, a0, -1 # t1 = a0 - 1 = end of string
 
-    # --- Coping to str2 --- #
+    # --- Copying to str2 --- #
     # t1 = current byte of str1
     # t2 = current byte of str2
     # t3 = size of string
@@ -572,33 +610,38 @@ reverse_string:
         addi t2, t2, 1
         addi t3, t3, -1
         bnez t3, copy
-        
-    reversed:
+
     li t4, 0
     sb t4, 0(t2)
 
     # ------------------------------------- #
     # --- Restoring the begining of str --- #
     # ------------------------------------- #
-    lw a1, 0(sp)    # a0 = begining of str
+    lw a0, 0(sp)    # a0 = begining of str
     addi sp, sp, 4  # Updates stack
 
-    # ------------------------------------- #
+    # ------------------------------------ #
     # --- Recovering ra value on stack --- #
-    # ------------------------------------- #
+    # ------------------------------------ #
     lw ra, 0(sp)
     addi sp, sp, 4
+
     # returns the pointer to the reversed stirng
-    mv a0, a1
     ret
 
-# main
 
+# main
 main:
+    # ------------------------------------- #
+    # --- Getting operation from buffer --- #
+    # ------------------------------------- #
     la a0, buffer
     jal gets
     jal atoi
-    teste_deb:
+
+    # -------------------------- #
+    # --- Checking operation --- #
+    # -------------------------- #
     li t1, 1
     beq a0, t1, operation_1 # if a0 == t1 then operation_1
     li t1, 2
@@ -607,6 +650,7 @@ main:
     beq a0, t1, operation_3 # if a0 == t1 then operation_3
     li t1, 4
     beq a0, t1, operation_4 # if a0 == t1 then operation_4
+    # else (just in case)
     j end_main
     
     operation_1:
@@ -623,7 +667,7 @@ main:
         la a0, buffer
         jal gets
         # --- Reversing string --- #
-        la a1, rev
+        la a1, reversed
         jal reverse_string
         # --- Printing string --- #
         jal puts
@@ -650,6 +694,7 @@ main:
         la a0, buffer
         jal gets
 
+        st_number:
         # --- Getting first number --- #
         jal find_space
         li t1, 0
@@ -659,25 +704,23 @@ main:
         la a0, buffer   # a0 = pointer to begining of first number on buffer
         la a1, number   # a1 = pointer to string number
         jal get_number
+        # jal puts
         jal atoi
         mv s1, a0       # s1 = first number
 
+        oper:
         # --- Getting operator --- #
         mv a0, s3
-        jal ignore_whitespace
-        lb s3, 0(a0)    # s3 = operator
         addi a0, a0, 1
-        jal ignore_whitespace
-        mv s2, a0       # s2 = begining of second number on buffer
+        lb s3, 0(a0)    # s3 = operator
+        addi a0, a0, 2
 
+        nd_number:
         # --- Getting second number --- #
-        jal find_null
-        li t1, 0
-        sb t1, 0(a0)
-
-        mv a0, s2       # a0 = pointer to begining of second number on buffer
+        # a0 = pointer to begining of second number on buffer
         la a1, number   # a1 = pointer to string number
         jal get_number
+        # jal puts
         jal atoi
         mv s2, a0       # s2 = second number
 
@@ -686,47 +729,49 @@ main:
         # s2 = second number
         # s3 = operator
         li t1, '+'
-        beq s3, t1, sum # if s3 == t1 then sum
+        beq s3, t1, sum     # if s3 == t1 then sum
         li t1, '-'
-        beq s3, t1, subt # if s3 == t1 then subt
+        beq s3, t1, subt    # if s3 == t1 then subt
         li t1, '*'
-        beq s3, t1, mult # if s3 == t1 then mult
+        beq s3, t1, mult    # if s3 == t1 then mult
         li t1, '/'
-        beq s3, t1, divi # if s3 == t1 then divi
+        beq s3, t1, divi    # if s3 == t1 then divi
         # else (just in case)
         li a0, 0
 
         sum:
             add a0, s1, s2  # a0 = s1 + s2
-            j print_operation
+            j print_result
         subt:
             sub a0, s1, s2  # a0 = s1 - s2
-            j print_operation
+            j print_result
         mult:
             mul a0, s1, s2  # a0 = s1 * s2
-            j print_operation
+            j print_result
         divi:
             div a0, s1, s2  # a0 = s1 / s2
-            j print_operation
+            j print_result
         
-        print_operation:
+        print_result:
             # --- Converting to string --- #
-            la a1, buffer
+            la a1, number
             li a2, 10
             jal itoa
+            debugger:
             # --- Printing result --- #
             jal puts
             # --- End --- #
             j end_main
 
     end_main:
-        la a0, end
-        jal puts
-        j exit
+        # la a0, finished
+        # jal puts
+        j _exit
 
 
 .data
-buffer: .string "244 + 67\n"
-rev: .string "--------------------"
-number: .string "------------------"
-end: .string "finished\n"
+buffer: .skip 0x50
+input: .string "4\n244 + 67\n"
+reversed: .skip 0x50
+number: .skip 0x50
+finished: .string "finished\n"
