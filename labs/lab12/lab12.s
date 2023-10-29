@@ -8,6 +8,7 @@ _start:
 
 
 _exit:
+    li a0, 0
     li a7, 93       # a7: syscall exit (93)
     ecall
 
