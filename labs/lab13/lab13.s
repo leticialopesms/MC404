@@ -30,13 +30,6 @@ _start:
     # ------------------------------ #
     li t0, base_GPT # t0 = address of base_GPT
 
-    # --- Setting initial time --- #
-    # base + 0x04 (word)
-    # Stores the time (in milliseconds) at the moment of the last
-    # reading by the GPT.
-    li t1, 0        # t1 = 0
-    sw t1, 4(t0)    # stores 32 bits on memory address base_GPT + 0x04
-
     # --- Setting timer --- #
     # base + 0x08 (word)
     # Storing 32-bit v > 0 programs the GPT to generate an external
@@ -75,51 +68,6 @@ exit:
     li a0, 0
     li a7, 93       # a7: syscall exit (93)
     ecall
-
-
-# void play_note(int ch, int inst, int note, int vel, int dur)
-play_note:
-    # Parameters:
-    # a0 (ch): channel in which the MIDI note will be played
-    # a1 (inst): instrument ID
-    # a2 (note): musical note
-    # a3 (vel): note velocity
-    # a4 (dur): note duration
-
-    li t0, base_MIDI
-    # ----------------------------- #
-    # --- Setting instrument ID --- #
-    # ----------------------------- #
-    # base_MIDI + 0x02 (short)
-    sh a1, 2(t0)    # stores 16 bits on memory address base_MIDI + 0x02
-
-    # ---------------------------- #
-    # --- Setting musical note --- #
-    # ---------------------------- #
-    # base_MIDI + 0x04 (byte)
-    sb a2, 4(t0)    # stores 8 bits on memory address base_MIDI + 0x04
-
-    # ----------------------------- #
-    # --- Setting note velocity --- #
-    # ----------------------------- #
-    # base_MIDI + 0x05 (byte)
-    sb a3, 5(t0)    # stores 8 bits on memory address base_MIDI + 0x05
-
-    # ----------------------------- #
-    # --- Setting note duration --- #
-    # ----------------------------- #
-    # base_MIDI + 0x06 (short)
-    sh a4, 0(t0)    # stores 16 bits on memory address base_MIDI + 0x06
-
-    # ---------------------------------- #
-    # --- Triggering the synthesizer --- #
-    # ---------------------------------- #
-    # base_MIDI + 0x00 (byte)
-    # Storing ch ≥ 0 triggers the synthesizer to start
-    # playing a MIDI note in the channel ch.
-    sb a0, 0(t0)
-
-    ret     # returns ch
 
 
 main_isr:
@@ -186,26 +134,32 @@ main_isr:
 GPT_isr:
     li t0, base_GPT # t0 = address of base_GPT
     
-    # --- Reading the current system time --- #
-    # base + 0x00 (byte)
-    # Storing “1” triggers the GPT device to start reading the
-    # current system time. The register is set to 0 when the
-    # reading is completed.
-    li t1, 1
-    sb t1, 0(t0)
+    # # --- Reading the current system time --- #
+    # # base + 0x00 (byte)
+    # # Storing “1” triggers the GPT device to start reading the
+    # # current system time. The register is set to 0 when the
+    # # reading is completed.
+    # li t1, 1
+    # sb t1, 0(t0)
 
-    read_system_time:
-        lb t1, 0(t0)
-        bnez t1, read_system_time
+    # read_system_time:
+    #     lb t1, 0(t0)
+    #     bnez t1, read_system_time
     
-    # --- Getting current system time --- #
-    # base + 0x04 (word)
-    # Stores the time (in milliseconds) at the moment of the last
-    # reading by the GPT.
-    lw t1, 4(t0)        # t1 = current system time
+    # # --- Getting current system time --- #
+    # # base + 0x04 (word)
+    # # Stores the time (in milliseconds) at the moment of the last
+    # # reading by the GPT.
+    # lw t1, 4(t0)        # t1 = current system time
+    # la t2, _system_time # t2 = address of _system_time variable
+    # sw t1, 0(t2)        # storing the time read (t1) on _system_time
+    
+    # --- Setting current system time --- #
     la t2, _system_time # t2 = address of _system_time variable
-    sw t1, 0(t2)        # storing the time read (t1) on _system_time
-    
+    lw t1, 0(t2)        # loading the value from _system_time
+    addi t1, t1, 100    # t1 = t1 + 100 ms
+    sw t1, 0(t2)        # updating _system_time
+
     # --- Setting timer --- #
     # base + 0x08 (word)
     # Storing 32-bit v > 0 programs the GPT to generate an external
@@ -217,13 +171,58 @@ GPT_isr:
     ret
 
 
+# void play_note(int ch, int inst, int note, int vel, int dur)
+play_note:
+    # Parameters:
+    # a0 (ch): channel in which the MIDI note will be played
+    # a1 (inst): instrument ID
+    # a2 (note): musical note
+    # a3 (vel): note velocity
+    # a4 (dur): note duration
+
+    li t0, base_MIDI
+    # ----------------------------- #
+    # --- Setting instrument ID --- #
+    # ----------------------------- #
+    # base_MIDI + 0x02 (short)
+    sh a1, 2(t0)    # stores 16 bits on memory address base_MIDI + 0x02
+
+    # ---------------------------- #
+    # --- Setting musical note --- #
+    # ---------------------------- #
+    # base_MIDI + 0x04 (byte)
+    sb a2, 4(t0)    # stores 8 bits on memory address base_MIDI + 0x04
+
+    # ----------------------------- #
+    # --- Setting note velocity --- #
+    # ----------------------------- #
+    # base_MIDI + 0x05 (byte)
+    sb a3, 5(t0)    # stores 8 bits on memory address base_MIDI + 0x05
+
+    # ----------------------------- #
+    # --- Setting note duration --- #
+    # ----------------------------- #
+    # base_MIDI + 0x06 (short)
+    sh a4, 6(t0)    # stores 16 bits on memory address base_MIDI + 0x06
+
+    # ---------------------------------- #
+    # --- Triggering the synthesizer --- #
+    # ---------------------------------- #
+    # base_MIDI + 0x00 (byte)
+    # Storing ch ≥ 0 triggers the synthesizer to start
+    # playing a MIDI note in the channel ch.
+    sb a0, 0(t0)
+
+    ret     # returns ch
+
+
 .section .bss
 
+.align 4
+_system_time: .word 0
 .align 4
 program_stack:  .skip 0x1000  # stores 0x1000 bits = 4 Kb
 program_stack_end:
 .align 4
 ISR_stack:      .skip 0x1000  # stores 0x1000 bits = 4 Kb
 isr_stack_end:
-.align 4
-_system_time: .word 0
