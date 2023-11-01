@@ -59,7 +59,7 @@ _start:
     # -------------------- #
     li a0, 0
     jal main
-    # if exit is called, then there is a problem in the code
+    # If exit is called, then there is a problem in the code
     # the song is supposed to play on repeat
     j exit
 
@@ -133,26 +133,6 @@ main_isr:
 
 GPT_isr:
     li t0, base_GPT # t0 = address of base_GPT
-    
-    # # --- Reading the current system time --- #
-    # # base + 0x00 (byte)
-    # # Storing “1” triggers the GPT device to start reading the
-    # # current system time. The register is set to 0 when the
-    # # reading is completed.
-    # li t1, 1
-    # sb t1, 0(t0)
-
-    # read_system_time:
-    #     lb t1, 0(t0)
-    #     bnez t1, read_system_time
-    
-    # # --- Getting current system time --- #
-    # # base + 0x04 (word)
-    # # Stores the time (in milliseconds) at the moment of the last
-    # # reading by the GPT.
-    # lw t1, 4(t0)        # t1 = current system time
-    # la t2, _system_time # t2 = address of _system_time variable
-    # sw t1, 0(t2)        # storing the time read (t1) on _system_time
     
     # --- Setting current system time --- #
     la t2, _system_time # t2 = address of _system_time variable
