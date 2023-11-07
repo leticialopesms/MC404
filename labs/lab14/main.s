@@ -1,4 +1,4 @@
-text
+.text
 .globl user_main
 user_main:
     jal control_logic
