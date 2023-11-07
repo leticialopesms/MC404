@@ -85,9 +85,9 @@ main_isr:
     sw a6, 24(sp)           # saves a6
     sw a7, 28(sp)           # saves a7
 
-    # ----------------------------------------------------------------- #
-    # --- # Checking if it was an INTERRUPT (1) or an EXCEPTION (0) --- #
-    # ----------------------------------------------------------------- #
+    # --------------------------------------------------------------- #
+    # --- Checking if it was an INTERRUPT (1) or an EXCEPTION (0) --- #
+    # --------------------------------------------------------------- #
     csrr a1, mcause             # reads the interrupt cause
     beqz a1, handle_exception   # if a1 == 0 then handle_exception
                                 # if (mcause.INTERRUPT == 0) handle_exception
