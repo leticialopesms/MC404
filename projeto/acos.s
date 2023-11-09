@@ -386,7 +386,32 @@ Syscall_get_rotation:
 # -------------------------------------------- GPT Peripheral -------------------------------------------- #
 # -------------------------------------------------------------------------------------------------------- #
 Syscall_get_systime:
-    li a0, 2
+    # Gets the time since the system has been booted, in milliseconds
+    li t0, base_GPT
+
+    # ------------------------ #
+    # --- Starting reading --- #
+    # ------------------------ #
+    # base + 0x00
+    # Storing the value 1 triggers the GPT device to start reading the current system time
+    li t3, 1        # t1 = 1
+    sb t3, 0x00(t0) # t0 = base
+
+    # --------------------------- #
+    # --- Reading system time --- #
+    # --------------------------- #
+    # Busy waiting:
+    # The byte at base + 0x00 is set to 0 when read is complete
+    reading_time:
+        lb t3, 0x02(t0)
+        bnez t3, reading_time    # if t1 != 0 then reading_time
+
+    # --------------------------- #
+    # --- Getting system time --- #
+    # --------------------------- #
+    # base + 0x04
+    # Stores the time (in milliseconds) at the moment of the last reading by the GPT
+    lw a0, 0x04(t0)
     j end_exception
 
 
@@ -421,36 +446,50 @@ Syscall_read_serial:
     # a1 (size): size of the string
     li t0, base_SERIAL
 
+    mv t1, a1   # t1 = counter
+    mv t2, a0   # t2 = address of current byte
     1:
     # ------------------------ #
     # --- Starting reading --- #
     # ------------------------ #
     # base + 0x02
     # Storing the value 1 triggers a read
-    li t1, 1        # t1 = 1
-    sb t1, 0x02(t0) # t0 = base + 0x02
+    li t3, 1        # t1 = 1
+    sb t3, 0x02(t0) # address = base + 0x02
 
     # -------------------- #
     # --- Reading byte --- #
     # -------------------- #
     # base + 0x03
     # Reading one byte and storing it at base + 0x03
-
     # Busy waiting:
     # The byte at base + 0x02 is set to 0 when read is complete
     reading:
-        lb t1, 0x02(t0)
-        bnez t1, reading    # if t1 != 0 then reading
+        lb t3, 0x02(t0)
+        bnez t3, reading    # if t1 != 0 then reading
 
     # -------------------- #
     # --- Storing byte --- #
     # -------------------- #
     # base + 0x03
     # Storing the byte read from base + 0x03 on buffer
-    lb a0, 0x03(t0) # a0 = byte read
-    sb a0, 0(a0)    # stores byte on buffer
-    
-    # Returns the byte read
+    lb t3, 0x03(t0) # a0 = byte read
+    sb t3, 0(t2)    # stores byte on buffer
+
+    # --------------------- #
+    # --- Checking LOOP --- #
+    # --------------------- #
+    addi t1, t1, -1     # updates counter t1
+    addi t2, t2, 1      # updates byte address
+    bgt t1, zero, 1b    # if t1 >= zero then 1b
+
+    # ------------------------------------ #
+    # --- Getting number of bytes read --- #
+    # ------------------------------------ #
+    sub a0, t2, a0
+    bnez t3, end_exception
+    li a0, 0
+    # Returns the size of string read
     j end_exception
 
 
@@ -460,21 +499,24 @@ Syscall_write_serial:
     # a1 (size): size of the string to be written
     li t0, base_SERIAL
 
+    mv t1, a1   # t1 = counter
+    mv t2, a0   # t2 = address of current byte
+    1:
     # -------------------- #
     # --- Storing byte --- #
     # -------------------- #
     # base + 0x01
     # Storing the byte from buffer to be wrtitten at base + 0x01
-    lb a0, 0(a0)    # a0 = byte to be written
-    sb a0, 0x01(t0) # stores byte on base + 0x01
+    lb t3, 0(t2)    # t3 = byte to be written
+    sb t3, 0x01(t0) # stores byte on base + 0x01
 
     # ------------------------ #
     # --- Starting writing --- #
     # ------------------------ #
     # base + 0x00
     # Storing the value 1 triggers a write
-    li t1, 1        # t1 = 1
-    sb t1, 0(t0)    # t0 = base + 0x00
+    li t3, 1        # t1 = 1
+    sb t3, 0(t0)    # address = base + 0x00
 
     # -------------------- #
     # --- Writing byte --- #
@@ -485,11 +527,23 @@ Syscall_write_serial:
     # Busy waiting:
     # The byte at base + 0x00 is set to 0 when write is complete
     writing:
-        lb t1, 0(t0)
-        bnez t1, writing    # if t1 != 0 then writing
+        lb t3, 0(t0)
+        bnez t3, writing    # if t1 != 0 then writing
     
-    # Returns the byte written
+    # --------------------- #
+    # --- Checking LOOP --- #
+    # --------------------- #
+    addi t1, t1, -1     # updates counter t1
+    addi t2, t2, 1      # updates byte address
+    bgt t1, zero, 1b    # if t1 > zero then 1b
+
+    # --------------------------------------- #
+    # --- Getting number of bytes written --- #
+    # --------------------------------------- #
+    sub a0, t2, a0
+    # Returns the size of string written
     j end_exception
+
 
 .section .data
 .align 4

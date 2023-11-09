@@ -130,6 +130,7 @@ get_time:
 
 # Write string to stdout
 # void puts (const char *str)
+# ADJUST (use strlen custom)
 puts:
     # Parameters:
     # a0 (str): Pointer to C string to be printed
@@ -217,6 +218,7 @@ puts:
 
 # Get string from stdin
 # char *gets (char *str)
+# ADJUST
 gets:
     # Parameters:
     # a0 (str): Pointer to a block of memory (array of char) where the string read is copied
@@ -306,9 +308,27 @@ atoi:
     # ------------------------------------------ #
     # --- Ignoring the whitespace characters --- #
     # ------------------------------------------ #
-    jal ignore_whitespace
-    beqz a0, end_atoi       # if a0 == 0 then end_atoi
-                            # else a0 = begining of number
+    ignore_whitespace:
+        lb t1, 0(a0)    # t1 = current byte (from memory address a0 + 0)
+        addi a0, a0, 1  # updates pointer a0
+        li t2, ' '
+        beq t1, t2, ignore_whitespace
+        li t2, '\t'
+        beq t1, t2, ignore_whitespace
+        li t2, '\n'
+        beq t1, t2, ignore_whitespace
+        li t2, 0x0b # '\v'
+        beq t1, t2, ignore_whitespace
+        li t2, 0x0c # '\f'
+        beq t1, t2, ignore_whitespace
+        li t2, '\r'
+        beq t1, t2, ignore_whitespace
+        li t2, 0
+        beq t1, t2, all_whitespace
+        addi a0, a0, -1
+
+    beqz t1, end_atoi   # if t1 == 0 then end_atoi
+                        # else a0 = begining of number
 
     li a4, 1    # a4 = sign of n
     li a5, 0    # a5 = counter = number of digits in n
