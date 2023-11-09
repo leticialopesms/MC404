@@ -1,5 +1,5 @@
 .section .text
-.set MEMORY_SPACE, 0xFFFF0100
+.set base_CAR, 0xFFFF0100
 .set X_FINAL, 73
 .set Y_FINAL, 1
 .set Z_FINAL, -19
@@ -146,7 +146,7 @@ main_isr:
 # -------------------------------------------- Car Peripheral -------------------------------------------- #
 # -------------------------------------------------------------------------------------------------------- #
 car_peripheral:
-    li t1, MEMORY_SPACE
+    li t1, base_CAR
     set_gps:
         # base + 0x00
         # Storing “1” triggers the GPS device to start reading
@@ -241,10 +241,10 @@ car_peripheral:
 # ------------------------------------------------------------------------------------------------------ #
 
 Syscall_set_engine_and_steering:
+    # Code: 10
     # --- Storing ra value on stack --- #
     addi sp, sp, -4
     sw ra, 0(sp)
-    # Code: 10
     li a7, 10
     ecall
     # --- Recovering ra value on stack --- #
@@ -253,10 +253,10 @@ Syscall_set_engine_and_steering:
     ret
 
 Syscall_set_handbreak:
+    # Code: 11
     # --- Storing ra value on stack --- #
     addi sp, sp, -4
     sw ra, 0(sp)
-    # Code: 11
     li a7, 11
     ecall
     # --- Recovering ra value on stack --- #
@@ -266,9 +266,12 @@ Syscall_set_handbreak:
 
 Syscall_get_position:
     # --- Storing ra value on stack --- #
+    # Code: 15
     addi sp, sp, -4
     sw ra, 0(sp)
-    # Code: 15
+    la a0, x_position
+    la a1, y_position
+    la a2, z_position
     li a7, 15
     ecall
     # --- Recovering ra value on stack --- #
@@ -283,32 +286,24 @@ control_logic:
     # ------------------------------- #
     # --- Checking the Z position --- #
     # ------------------------------- #
-    la a0, x_position
-    la a1, y_position
-    la a2, z_position
     jal Syscall_get_position
     lw a0, 0(a2)            # a0 = current z-position
     li a1, Z_FINAL          # a1 = final z-position
-    bge a0, a1, end_main    # if a0 >= a1 then end_main
+    bge a0, a1, end_control # if a0 >= a1 then end_control
     # Setting handbreak to disabled
     li a0, 0
     jal Syscall_set_handbreak
     # Going foward and setting steering wheel
     li a0, 1    # go foward
-    li a1, -16  # go left
+    li a1, -17  # go left
     jal Syscall_set_engine_and_steering
 
     LOOP:
-        jal set_gps
-        jal get_gps
-        la a0, x_position
-        la a1, y_position
-        la a2, z_position
         jal Syscall_get_position
         lw a0, 0(a2)            # a0 = current z-position
         li a1, Z_FINAL          # a1 = final z-position
-        addi a1, a1, -16        # a1 = (final z-position) - 16
-        bge a0, a1, end_control    # if a0 >= a1 then end_main
+        addi a1, a1, -17        # a1 = (final z-position) - 16
+        bge a0, a1, end_control    # if a0 >= a1 then end_control
         j LOOP
 
     end_control:
@@ -321,13 +316,15 @@ control_logic:
         jal Syscall_set_handbreak
 
 
-.section .bss
+.section .data
 .align 4
 x_position: .word 0
 .align 4
 y_position: .word 0
 .align 4
 z_position: .word 0
+
+.section .data
 .align 4
 program_stack:  .skip 0x100
 program_stack_end:
