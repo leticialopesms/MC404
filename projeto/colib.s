@@ -531,7 +531,7 @@ get_distance:
     # --- Calculating d = sqrt(D) --- #
     # ------------------------------- #
     mv a0, t0   # a0: value
-    li a1, 10   # a1: iterations
+    li a1, 40   # a1: iterations
     jal approx_sqrt
     # ------------------------------------ #
     # --- Recovering ra value on stack --- #
