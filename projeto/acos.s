@@ -499,7 +499,7 @@ Syscall_read_serial:
     # --------------------- #
     addi t1, t1, -1     # updates counter t1
     addi t2, t2, 1      # updates byte address
-    bgt t1, zero, 1b    # if t1 >= zero then 1b
+    bgt t1, zero, 1b    # if t1 > zero then 1b
     # ------------------------------------ #
     # --- Getting number of bytes read --- #
     # ------------------------------------ #

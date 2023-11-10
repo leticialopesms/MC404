@@ -23,66 +23,36 @@
 
 set_engine:
     # Code: 10
-    # --- Storing ra value on stack --- #
-    addi sp, sp, -4
-    sw ra, 0(sp)
     li a7, 10
     ecall
-    # --- Recovering ra value on stack --- #
-    lw ra, 0(sp)
-    addi sp, sp, 4
     ret
 
 
 set_handbrake:
     # Code: 11
-    # --- Storing ra value on stack --- #
-    addi sp, sp, -4
-    sw ra, 0(sp)
     li a7, 11
     ecall
-    # --- Recovering ra value on stack --- #
-    lw ra, 0(sp)
-    addi sp, sp, 4
     ret
 
 
 read_sensor_distance:
     # Code: 13
-    # --- Storing ra value on stack --- #
-    addi sp, sp, -4
-    sw ra, 0(sp)
     li a7, 13
     ecall
-    # --- Recovering ra value on stack --- #
-    lw ra, 0(sp)
-    addi sp, sp, 4
     ret
 
 
 get_position:
     # Code: 15
-    # --- Storing ra value on stack --- #
-    addi sp, sp, -4
-    sw ra, 0(sp)
     li a7, 15
     ecall
-    # --- Recovering ra value on stack --- #
-    lw ra, 0(sp)
-    addi sp, sp, 4
     ret
 
 
 get_rotation:
     # Code: 16
-    # --- Storing ra value on stack --- #
-    addi sp, sp, -4
-    sw ra, 0(sp)
     li a7, 16
     ecall
-    # --- Recovering ra value on stack --- #
-    lw ra, 0(sp)
-    addi sp, sp, 4
     ret
 
 
@@ -92,27 +62,15 @@ get_rotation:
 
 read:
     # Code: 17
-    # --- Storing ra value on stack --- #
-    addi sp, sp, -4
-    sw ra, 0(sp)
     li a7, 17
     ecall
-    # --- Recovering ra value on stack --- #
-    lw ra, 0(sp)
-    addi sp, sp, 4
     ret
 
 
 write:
     # Code: 18
-    # --- Storing ra value on stack --- #
-    addi sp, sp, -4
-    sw ra, 0(sp)
     li a7, 18
     ecall
-    # --- Recovering ra value on stack --- #
-    lw ra, 0(sp)
-    addi sp, sp, 4
     ret
 
 
@@ -122,14 +80,8 @@ write:
 
 get_time:
     # Code: 20
-    # --- Storing ra value on stack --- #
-    addi sp, sp, -4
-    sw ra, 0(sp)
     li a7, 20
     ecall
-    # --- Recovering ra value on stack --- #
-    lw ra, 0(sp)
-    addi sp, sp, 4
     ret
 
 
