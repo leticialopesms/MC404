@@ -16,6 +16,7 @@
 .globl approx_sqrt
 .globl get_distance
 .globl fill_and_pop
+
 # ------------------------------------------------------------------------------------------------------ #
 # ------------------------------------------- Car Peripheral ------------------------------------------- #
 # ------------------------------------------------------------------------------------------------------ #
@@ -32,6 +33,7 @@ set_engine:
     addi sp, sp, 4
     ret
 
+
 set_handbrake:
     # Code: 11
     # --- Storing ra value on stack --- #
@@ -43,6 +45,7 @@ set_handbrake:
     lw ra, 0(sp)
     addi sp, sp, 4
     ret
+
 
 read_sensor_distance:
     # Code: 13
@@ -56,6 +59,7 @@ read_sensor_distance:
     addi sp, sp, 4
     ret
 
+
 get_position:
     # Code: 15
     # --- Storing ra value on stack --- #
@@ -67,6 +71,7 @@ get_position:
     lw ra, 0(sp)
     addi sp, sp, 4
     ret
+
 
 get_rotation:
     # Code: 16
@@ -96,6 +101,7 @@ read:
     lw ra, 0(sp)
     addi sp, sp, 4
     ret
+
 
 write:
     # Code: 18
@@ -426,7 +432,7 @@ itoa:
         # --- Converting to char --- #
         li a4, 10
         blt a3, a4, to_char # if a3 < a4 then to_char
-        addi a3, a3, 7      # else considers letters 'a' to 'f'
+        addi a3, a3, 7      # else considers letters 'A' to 'F'
 
         to_char:
             addi a3, a3, 48 # converts value in a3 to char, according to ASCII table
@@ -480,7 +486,7 @@ approx_sqrt:
     divu t1, a0, t0 # t1 = y/k
     add t2, t0, t1  # t2 = k + y/k
     srli t2, t2, 1  # t2 = k' = (k + y/k)/2
-    mv t0, t2
+    mv t0, t2       # t0 = k = k'
     addi a1, a1, -1 # updates counter a1
     bnez a1, 1b     # if a1 != 0 then 1b
     mv a0, t0
@@ -489,7 +495,6 @@ approx_sqrt:
 
 # Euclidean Distance between two points, A and B, in a 3D space
 # int get_distance(int x_a, int y_a, int z_a, int x_b, int y_b, int z_b)
-# TODO
 get_distance:
     # Parameters:
     # a0 (x_a): X coordinate of point A.
@@ -499,13 +504,11 @@ get_distance:
     # a4 (y_b): Y coordinate of point B.
     # a5 (z_b): Z coordinate of point B.
     li t0, 0    # t0 = D = d^2
-
     # --------------------------------- #
     # --- Storing ra value on stack --- #
     # --------------------------------- #
     addi sp, sp, -4
     sw ra, 0(sp)
-
     # ----------------------------- #
     # --- Getting (x_a - x_b)^2 --- #
     # ----------------------------- #
@@ -524,14 +527,12 @@ get_distance:
     sub t1, a2, a5  # t1 = (a2 - a5) = (z_a - z_b)
     mul t1, t1, t1  # t1 = (z_a - z_b)^2
     add t0, t0, t1  # t0 = t0 + t1
-
     # ------------------------------- #
     # --- Calculating d = sqrt(D) --- #
     # ------------------------------- #
     mv a0, t0   # a0: value
     li a1, 10   # a1: iterations
     jal approx_sqrt
-
     # ------------------------------------ #
     # --- Recovering ra value on stack --- #
     # ------------------------------------ #
@@ -542,7 +543,6 @@ get_distance:
 
 # Copies all fields from the head node to the fill node and returns the next node on the linked list (head->next).
 # Node *fill_and_pop(Node *head, Node *fill)
-# TODO
 fill_and_pop:
     # Parameters:
     # a0 (head): current head of the linked list

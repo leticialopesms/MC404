@@ -438,7 +438,7 @@ GPT_isr:
     # ----------------------------------- #
     la t2, _system_time # t2 = address of _system_time variable
     lw t1, 0(t2)        # loading the value from _system_time
-    addi t1, t1, 100    # t1 = t1 + 100 ms
+    add t1, t1, a0      # t1 = t1 + a0 ms
     sw t1, 0(t2)        # updating _system_time
     # --------------------- #
     # --- Setting timer --- #
@@ -448,8 +448,7 @@ GPT_isr:
     # interruption after v milliseconds. It also sets this register
     # to 0 after v milliseconds (immediately before generating the
     # interruption)
-    li t1, 100      # t1 = 100 ms
-    sw a0, 8(t0)    # stores 32 bits on memory address base_GPT + 0x08
+    sw a0, 0x08(t0)     # stores 32 bits on memory address base_GPT + 0x08
     j end_interrupt
 
 
