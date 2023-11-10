@@ -72,6 +72,7 @@ main_isr:
     sw t0, 32(sp)           # saves t0
     sw t1, 36(sp)           # saves t1
     sw t2, 40(sp)           # saves t2
+    sw t3, 44(sp)           # saves t3
 
     # --------------------------------------------------------------- #
     # --- Checking if it was an INTERRUPT (1) or an EXCEPTION (0) --- #
@@ -96,7 +97,7 @@ main_isr:
         # --- Handling the external interrupt --- #
         handle_external_isr:
             # --- Handling GPT --- #
-            jal GPT_isr
+            j GPT_isr
 
         end_interrupt:
             j end_main_isr
@@ -118,7 +119,7 @@ main_isr:
             li t0, 10
             beq a7, t0, Syscall_set_engine_and_steering
             li t0, 11
-            beq a7, t0, Syscall_set_handbreak
+            beq a7, t0, Syscall_set_handbrake
             li t0, 12
             beq a7, t0, Syscall_read_sensors
             li t0, 13
@@ -144,6 +145,7 @@ main_isr:
     # --- Restoring the context --- #
     # ----------------------------- #
     end_main_isr:
+    lw t3, 44(sp)           # restores t3
     lw t2, 40(sp)           # restores t2
     lw t1, 36(sp)           # restores t1
     lw t0, 32(sp)           # restores t0
@@ -170,8 +172,9 @@ Syscall_set_engine_and_steering:
     # Parameters:
     # a0 (dir): Movement direction (foward, backward or off)
     # a1 (angle): Steering wheel angle (value between -127 and 127)
-
+    # ------------------ #
     # --- Validating --- #
+    # ------------------ #
     # a0
     li t0, -1
     blt a0, t0, invalid_parameter
@@ -182,7 +185,9 @@ Syscall_set_engine_and_steering:
     blt a1, t0, invalid_parameter
     li t0, 127
     bge a1, t0, invalid_parameter
-
+    # --------------------------------------------- #
+    # --- Getting address of the car peripheral --- #
+    # --------------------------------------------- #
     li t0, base_CAR
     # -------------- #
     # --- Engine --- #
@@ -204,11 +209,14 @@ Syscall_set_engine_and_steering:
         j end_exception
 
 
-Syscall_set_handbreak:
-    # Enables ou disable handbreak
+Syscall_set_handbrake:
+    # Enables ou disable handbrake
     # Parameters:
-    # a0 (setter): value stating if the handbreak must be used (Storing “1” enables the hand break)
+    # a0 (setter): value stating if the handbrake must be used (Storing “1” enables the hand break)
     # enable = 1 | disable = 0
+    # --------------------------------------------- #
+    # --- Getting address of the car peripheral --- #
+    # --------------------------------------------- #
     li t0, base_CAR
     # ------------------ #
     # --- Hand break --- #
@@ -223,6 +231,9 @@ Syscall_read_sensors:
     # Read values from the luminosity sensor
     # Parameters:
     # a0 (array): address of an array with 256 elements that will store the values read by the luminosity sensor
+    # --------------------------------------------- #
+    # --- Getting address of the car peripheral --- #
+    # --------------------------------------------- #
     li t0, base_CAR
     # ---------------------- #
     # --- Reading sensor --- #
@@ -238,7 +249,6 @@ Syscall_read_sensors:
     # The value on t1 is set to 0 when the reading is completed
     lb t1, 0(t0)
     bnez t1, 1b
-
     # ---------------------------------- #
     # --- Copying image to the array --- #
     # ---------------------------------- #
@@ -260,6 +270,9 @@ Syscall_read_sensors:
 
 Syscall_read_sensor_distance:
     # Read the value from the ultrasonic sensor that detects objects up to 20 meters in front of the car.
+    # --------------------------------------------- #
+    # --- Getting address of the car peripheral --- #
+    # --------------------------------------------- #
     li t0, base_CAR
     # ---------------------- #
     # --- Reading sensor --- #
@@ -275,7 +288,6 @@ Syscall_read_sensor_distance:
     # The value on t1 is set to 0 when the reading is completed
     lb t1, 0(t0)
     bnez t1, 1b
-
     # ------------------------------- #
     # --- Getting sensor distance --- #
     # ------------------------------- #
@@ -292,8 +304,10 @@ Syscall_get_position:
     # a0 (x-axis): address of the variable that will store the value of x-position
     # a1 (y-axis): address of the variable that will store the value of y-position
     # a2 (z-axis): address of the variable that will store the value of z-position
+    # --------------------------------------------- #
+    # --- Getting address of the car peripheral --- #
+    # --------------------------------------------- #
     li t0, base_CAR
-
     # ------------------- #
     # --- Reading GPS --- #
     # ------------------- #
@@ -308,7 +322,6 @@ Syscall_get_position:
     # The value on t1 is set to 0 when the reading is completed
     lb t1, 0(t0)
     bnez t1, 1b
-
     # -------------------------- #
     # --- Getting X-position --- #
     # -------------------------- #
@@ -330,7 +343,6 @@ Syscall_get_position:
     # Storing the Z-axis of the car current position
     lw t1, 0x18(t0)
     sw t1, 0(a2)
-
     j end_exception
 
 
@@ -340,8 +352,10 @@ Syscall_get_rotation:
     # a0 (x-angle): address of the variable that will store the value of Euler angle in x
     # a1 (y-angle): address of the variable that will store the value of Euler angle in y
     # a2 (z-angle): address of the variable that will store the value of Euler angle in z
+    # --------------------------------------------- #
+    # --- Getting address of the car peripheral --- #
+    # --------------------------------------------- #
     li t0, base_CAR
-
     # ------------------- #
     # --- Reading GPS --- #
     # ------------------- #
@@ -356,7 +370,6 @@ Syscall_get_rotation:
     # The value on t1 is set to 0 when the reading is completed
     lb t1, 0(t0)
     bnez t1, 1b
-
     # -------------------------------- #
     # --- Getting Euler angle in x --- #
     # -------------------------------- #
@@ -378,7 +391,6 @@ Syscall_get_rotation:
     # Storing the current Z-angle of the car
     lw t1, 0x0C(t0)
     sw t1, 0(a2)
-
     j end_exception
 
 
@@ -387,25 +399,25 @@ Syscall_get_rotation:
 # -------------------------------------------------------------------------------------------------------- #
 Syscall_get_systime:
     # Gets the time since the system has been booted, in milliseconds
+    # --------------------------------------------- #
+    # --- Getting address of the GPT peripheral --- #
+    # --------------------------------------------- #
     li t0, base_GPT
-
     # ------------------------ #
     # --- Starting reading --- #
     # ------------------------ #
     # base + 0x00
     # Storing the value 1 triggers the GPT device to start reading the current system time
-    li t3, 1        # t1 = 1
-    sb t3, 0x00(t0) # t0 = base
-
+    li t1, 1        # t1 = 1
+    sb t1, 0(t0)    # t0 = base
     # --------------------------- #
     # --- Reading system time --- #
     # --------------------------- #
     # Busy waiting:
     # The byte at base + 0x00 is set to 0 when read is complete
     reading_time:
-        lb t3, 0x02(t0)
-        bnez t3, reading_time    # if t1 != 0 then reading_time
-
+        lb t1, 0(t0)
+        bnez t1, reading_time    # if t1 != 0 then reading_time
     # --------------------------- #
     # --- Getting system time --- #
     # --------------------------- #
@@ -417,23 +429,28 @@ Syscall_get_systime:
 
 GPT_isr:
     # a0 (v): time until the next interruption
+    # --------------------------------------------- #
+    # --- Getting address of the GPT peripheral --- #
+    # --------------------------------------------- #
     li t0, base_GPT     # t0 = address of base_GPT
-    
+    # ----------------------------------- #
     # --- Setting current system time --- #
+    # ----------------------------------- #
     la t2, _system_time # t2 = address of _system_time variable
     lw t1, 0(t2)        # loading the value from _system_time
     addi t1, t1, 100    # t1 = t1 + 100 ms
     sw t1, 0(t2)        # updating _system_time
-
+    # --------------------- #
     # --- Setting timer --- #
+    # --------------------- #
     # base + 0x08 (word)
     # Storing 32-bit v > 0 programs the GPT to generate an external
     # interruption after v milliseconds. It also sets this register
     # to 0 after v milliseconds (immediately before generating the
-    # interruption).
+    # interruption)
     li t1, 100      # t1 = 100 ms
     sw a0, 8(t0)    # stores 32 bits on memory address base_GPT + 0x08
-    ret
+    j end_interrupt
 
 
 # -------------------------------------------------------------------------------------------------------- #
@@ -444,8 +461,13 @@ Syscall_read_serial:
     # Parameters:
     # a0 (buffer): pointer to buffer where the string read will be stored
     # a1 (size): size of the string
+    # ----------------------------------------------------- #
+    # --- Getting address of the serial port peripheral --- #
+    # ----------------------------------------------------- #
     li t0, base_SERIAL
-
+    # -------------------- #
+    # --- Setting LOOP --- #
+    # -------------------- #
     mv t1, a1   # t1 = counter
     mv t2, a0   # t2 = address of current byte
     1:
@@ -454,9 +476,8 @@ Syscall_read_serial:
     # ------------------------ #
     # base + 0x02
     # Storing the value 1 triggers a read
-    li t3, 1        # t1 = 1
+    li t3, 1        # t3 = 1
     sb t3, 0x02(t0) # address = base + 0x02
-
     # -------------------- #
     # --- Reading byte --- #
     # -------------------- #
@@ -466,23 +487,20 @@ Syscall_read_serial:
     # The byte at base + 0x02 is set to 0 when read is complete
     reading:
         lb t3, 0x02(t0)
-        bnez t3, reading    # if t1 != 0 then reading
-
+        bnez t3, reading    # if t3 != 0 then reading
     # -------------------- #
     # --- Storing byte --- #
     # -------------------- #
     # base + 0x03
     # Storing the byte read from base + 0x03 on buffer
-    lb t3, 0x03(t0) # a0 = byte read
+    lb t3, 0x03(t0) # t3 = byte read
     sb t3, 0(t2)    # stores byte on buffer
-
     # --------------------- #
     # --- Checking LOOP --- #
     # --------------------- #
     addi t1, t1, -1     # updates counter t1
     addi t2, t2, 1      # updates byte address
     bgt t1, zero, 1b    # if t1 >= zero then 1b
-
     # ------------------------------------ #
     # --- Getting number of bytes read --- #
     # ------------------------------------ #
@@ -497,8 +515,13 @@ Syscall_write_serial:
     # Parameters:
     # a0 (buffer): pointer to buffer where the string is stored
     # a1 (size): size of the string to be written
+    # ----------------------------------------------------- #
+    # --- Getting address of the serial port peripheral --- #
+    # ----------------------------------------------------- #
     li t0, base_SERIAL
-
+    # -------------------- #
+    # --- Setting LOOP --- #
+    # -------------------- #
     mv t1, a1   # t1 = counter
     mv t2, a0   # t2 = address of current byte
     1:
@@ -509,34 +532,29 @@ Syscall_write_serial:
     # Storing the byte from buffer to be wrtitten at base + 0x01
     lb t3, 0(t2)    # t3 = byte to be written
     sb t3, 0x01(t0) # stores byte on base + 0x01
-
     # ------------------------ #
     # --- Starting writing --- #
     # ------------------------ #
     # base + 0x00
     # Storing the value 1 triggers a write
-    li t3, 1        # t1 = 1
+    li t3, 1        # t3 = 1
     sb t3, 0(t0)    # address = base + 0x00
-
     # -------------------- #
     # --- Writing byte --- #
     # -------------------- #
     # base + 0x01
     # Writing the byte that is stored at base + 0x01
-
     # Busy waiting:
     # The byte at base + 0x00 is set to 0 when write is complete
     writing:
         lb t3, 0(t0)
-        bnez t3, writing    # if t1 != 0 then writing
-    
+        bnez t3, writing    # if t3 != 0 then writing
     # --------------------- #
     # --- Checking LOOP --- #
     # --------------------- #
     addi t1, t1, -1     # updates counter t1
     addi t2, t2, 1      # updates byte address
     bgt t1, zero, 1b    # if t1 > zero then 1b
-
     # --------------------------------------- #
     # --- Getting number of bytes written --- #
     # --------------------------------------- #
