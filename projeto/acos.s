@@ -235,19 +235,19 @@ Syscall_read_sensors:
     # --- Getting address of the car peripheral --- #
     # --------------------------------------------- #
     li t0, base_CAR
-    # ---------------------- #
-    # --- Reading sensor --- #
-    # ---------------------- #
-    # base + 0x02
-    # Storing “1” triggers the Ultrasonic Sensor device to measure the distance in front of the car.
-    # The register is set to 0 when the measurement is completed.
+    # --------------------- #
+    # --- Capture image --- #
+    # --------------------- #
+    # base + 0x01
+    # Storing “1” triggers the Line Camera device to capture an image
+    # The register is set to 0 when the capture is completed
     li t1, 1
-    sb t1, 0x02(t0)
+    sb t1, 0x01(t0)
     1:
-    # Checking if the sensor already got all the info needed
+    # Checking if the camera already got all the info needed
     # Busy Waiting
     # The value on t1 is set to 0 when the reading is completed
-    lb t1, 0(t0)
+    lb t1, 0x01(t0)
     bnez t1, 1b
     # ---------------------------------- #
     # --- Copying image to the array --- #
@@ -269,7 +269,7 @@ Syscall_read_sensors:
 
 
 Syscall_read_sensor_distance:
-    # Read the value from the ultrasonic sensor that detects objects up to 20 meters in front of the car.
+    # Read the value from the ultrasonic sensor that detects objects up to 20 meters in front of the car
     # --------------------------------------------- #
     # --- Getting address of the car peripheral --- #
     # --------------------------------------------- #
@@ -278,15 +278,15 @@ Syscall_read_sensor_distance:
     # --- Reading sensor --- #
     # ---------------------- #
     # base + 0x02
-    # Storing “1” triggers the Ultrasonic Sensor device to measure the distance in front of the car.
-    # The register is set to 0 when the measurement is completed.
+    # Storing “1” triggers the Ultrasonic Sensor device to measure the distance in front of the car
+    # The register is set to 0 when the measurement is completed
     li t1, 1
     sb t1, 0x02(t0)
     1:
     # Checking if the sensor already got all the info needed
     # Busy Waiting
     # The value on t1 is set to 0 when the reading is completed
-    lb t1, 0(t0)
+    lb t1, 0x02(t0)
     bnez t1, 1b
     # ------------------------------- #
     # --- Getting sensor distance --- #
