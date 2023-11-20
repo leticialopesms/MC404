@@ -89,8 +89,8 @@ main_isr:
         csrr t1, mcause
         andi t1, t1, 0x3f           # Isolates the interrupt cause (bit 31)
         # --- Checks if it was a external interrupt --- #
-        li t2, 11                           # a2 = EXCCODE 11 = Machine external interrupt
-        beq t1, t2, handle_external_isr     # if a1 == a2 then external_isr
+        li t2, 11                           # t2 = EXCCODE 11 = Machine external interrupt
+        beq t1, t2, handle_external_isr     # if t1 == t2 then external_isr
                                             # if (mcause.EXCCODE == 11) then external_isr
         j end_interrupt
 
@@ -260,10 +260,10 @@ Syscall_read_sensors:
     li t2, 256          # t2 = counter
     copy_sensor_array:
         addi t2, t2, -1     # updates counter
-        lb a1, 0(t0)        # a1 = cureent byte
+        lb a1, 0(t0)        # a1 = current byte
         sb a1, 0(t1)
-        addi t0, t0, 1
-        addi t1, t1, 1
+        addi t0, t0, 1      # updating pointer t0
+        addi t1, t1, 1      # updating pointer t1
         bge t2, zero, copy_sensor_array # if t2 >= zero then copy_sensor_array
     j end_exception
 
@@ -505,8 +505,7 @@ Syscall_read_serial:
     # ------------------------------------ #
     sub a0, t2, a0
     bnez t3, end_exception
-    li a0, 0
-    # Returns the size of string read
+    li a0, 0 # Returns the size of string read
     j end_exception
 
 
@@ -537,7 +536,7 @@ Syscall_write_serial:
     # base + 0x00
     # Storing the value 1 triggers a write
     li t3, 1        # t3 = 1
-    sb t3, 0(t0)    # address = base + 0x00
+    sb t3, 0x00(t0) # address = base + 0x00
     # -------------------- #
     # --- Writing byte --- #
     # -------------------- #
@@ -557,8 +556,7 @@ Syscall_write_serial:
     # --------------------------------------- #
     # --- Getting number of bytes written --- #
     # --------------------------------------- #
-    sub a0, t2, a0
-    # Returns the size of string written
+    sub a0, t2, a0 # Returns the size of string written
     j end_exception
 
 
@@ -568,5 +566,5 @@ _system_time: .word 0
 
 .section .bss
 .align 4
-system_stack:      .skip 0x100
+system_stack: .skip 0x100
 system_stack_end:
